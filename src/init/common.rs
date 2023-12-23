@@ -1,23 +1,11 @@
 use crate::{
     cli::{Family, Target},
-    init::nrf::init_memory_x,
+    init::{nrf::init_memory_x, utils::get_family_and_target_from_chip},
 };
 use probe_rs::config::{get_target_by_name, search_chips};
-use std::{env::set_current_dir, fs, io::Write, process::Command as Process};
+use std::{env::set_current_dir, fs, io::Write, process::Command};
 
-pub(crate) fn init_file(name: &str, content: &str) {
-    let mut file = fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(name)
-        .expect(&format!("Failed to create \"{name}\"."));
-
-    file.write_all(content.as_bytes())
-        .expect(&format!("Failed to write to \"{name}\"."));
-
-    println!("{}", name);
-}
+use super::utils::{cargo_add, init_file};
 
 fn init_config(target: &Target, chip: &str) {
     fs::create_dir_all(".cargo").expect("Failed to create \".cargo\".");
@@ -82,23 +70,6 @@ fn init_main(family: &Family) {
     }
 }
 
-fn cargo_add(name: &str, features: Option<Vec<&str>>, optional: bool) {
-    let features = features.unwrap_or(Vec::new()).join(",");
-    let mut cmd = Process::new("cargo");
-
-    cmd.arg("add")
-        .args([name, &format!("--features={features}")]);
-
-    if optional {
-        cmd.arg("--optional");
-    }
-
-    cmd.output()
-        .expect(&format!("Failed to add \"{name}\" to manifest"));
-
-    println!("- {}", name);
-}
-
 fn init_manifest(name: &str, chip: &str, commit: Option<String>) {
     let family = chip
         .find("stm32")
@@ -161,10 +132,10 @@ fn init_manifest(name: &str, chip: &str, commit: Option<String>) {
     .expect("Failed to append to \"Cargo.toml\".");
 }
 
-pub fn init(name: String, family: Family, chip: String, target: Target, commit: Option<String>) {
+pub fn init(name: String, chip: String, commit: Option<String>) {
     println!("Setting up Embassy project...");
 
-    Process::new("cargo")
+    Command::new("cargo")
         .args(["new", &name])
         .output()
         .expect("Failed to create cargo project.");
@@ -175,6 +146,8 @@ pub fn init(name: String, family: Family, chip: String, target: Target, commit: 
 
     if let Ok(chips) = search_chips(&chip) {
         let probe_target = get_target_by_name(chips.first().unwrap()).unwrap();
+
+        let (family, target) = get_family_and_target_from_chip(&chip);
 
         match family {
             Family::STM32 => {
