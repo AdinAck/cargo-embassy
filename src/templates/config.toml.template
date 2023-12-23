@@ -1,0 +1,14 @@
+# This file was automatically generated.
+
+[target.{target}]
+runner = 'probe-rs run --chip {chip}'
+
+[build]
+target = "{target}"
+
+[env]
+DEFMT_LOG = "trace"
+
+[unstable]
+build-std = ["core"]
+build-std-features = ["panic_immediate_abort"]

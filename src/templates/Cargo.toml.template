@@ -1,0 +1,41 @@
+# This file was automatically generated.
+
+[package]
+edition = "2021"
+name = "{name}"
+version = "0.1.0"
+
+[dependencies]
+embassy-executor = {{ version = "0.3.0", features = ["nightly", "arch-cortex-m", "executor-thread", "integrated-timers"] }}
+embassy-sync = {{ version = "0.2.0" }}
+embassy-futures = {{ version = "0.1.1" }}
+embassy-time = {{ version = "0.1.2", features = ["tick-hz-32_768"] }}
+embassy-{family} = {{ version = "0.1.0", features = {features} }}
+embedded-storage = {{ version = "0.3.0" }}
+embedded-storage-async = {{ version = "0.4.0" }}
+
+[[bin]]
+name = "{name}"
+test = false
+bench = false
+
+[profile.dev]
+debug = true
+lto = true
+opt-level = "s"
+incremental = true
+
+[profile.release]
+debug = false
+lto = true
+opt-level = "s"
+incremental = true
+
+[patch.crates-io]
+embassy-executor = {{ git = "https://github.com/embassy-rs/embassy", {source} }}
+embassy-sync = {{ git = "https://github.com/embassy-rs/embassy", {source} }}
+embassy-futures = {{ git = "https://github.com/embassy-rs/embassy", {source} }}
+embassy-time = {{ git = "https://github.com/embassy-rs/embassy", {source} }}
+embassy-{family} = {{ git = "https://github.com/embassy-rs/embassy", {source} }}
+embedded-storage-async = {{ git = "https://github.com/rust-embedded-community/embedded-storage", rev = "3fddbf775528138554b83ab01cbd3264edfaf8f3" }}
+embedded-storage = {{ git = "https://github.com/rust-embedded-community/embedded-storage", rev = "3fddbf775528138554b83ab01cbd3264edfaf8f3" }}
