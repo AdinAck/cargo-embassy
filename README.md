@@ -25,7 +25,7 @@ cargo install --git https://github.com/adinack/cargo-embassy
 
 # Usage
 
-This utility will also create the cargo project, so wherever you would normall run `cargo new ...`, run:
+This utility will also create the cargo project, so wherever you would normally run `cargo new ...`, run:
 
 ```sh
 cargo embassy init {project_name} args...
