@@ -41,19 +41,19 @@ cargo embassy init --help
 
 **Create a new Embassy project for the STM32G031K8:**
 ```sh
-cargo embassy init my_project --family stm32 --chip stm32g031k8 --target thumbv6
+cargo embassy init my_project --chip stm32g031k8
 ```
 
 That's it! You can `cargo flash` or `cargo run --features=defmt`.
 
 **Create a new Embassy project for the STM32G031K8 with a specific Embassy version:**
 ```sh
-cargo embassy init my_project --family stm32 --chip stm32g031k8 --target thumbv6 --commit 5bc75578260f4c644cc060e6458a05d7fc0ffb41
+cargo embassy init my_project --chip stm32g031k8 --commit 5bc75578260f4c644cc060e6458a05d7fc0ffb41
 ```
 
 **Create a new Embassy project for the NRF52840:**
 ```sh
-cargo embassy init my_project --family nrf --chip nrf52840 --target thumbv7e
+cargo embassy init my_project --chip nrf52840
 ```
 
 Update `memory.x` appropriately.
