@@ -1,5 +1,5 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, Clone, ValueEnum)]
 #[value()]
@@ -13,6 +13,21 @@ impl Display for Family {
         match self {
             Self::STM32 => f.write_str("stm32"),
             Self::NRF => f.write_str("nrf"),
+        }
+    }
+}
+
+impl TryFrom<&str> for Family {
+    type Error = ();
+
+    fn try_from(chip: &str) -> Result<Self, Self::Error> {
+        let family_raw = chip.get(..5).expect("Invalid chip name: Too short.");
+        if family_raw.to_lowercase().as_str() == "stm32" {
+            Ok(Self::STM32)
+        } else if &family_raw[..3] == "nrf" {
+            Ok(Self::NRF)
+        } else {
+            Err(())
         }
     }
 }
@@ -39,6 +54,47 @@ impl Display for Target {
     }
 }
 
+impl TryFrom<&str> for Target {
+    type Error = ();
+    fn try_from(chip: &str) -> Result<Self, Self::Error> {
+        let mut chip_target_map = HashMap::new();
+
+        // stm
+        chip_target_map.insert("stm32f0", Target::Thumbv6);
+        chip_target_map.insert("stm32f1", Target::Thumbv7);
+        chip_target_map.insert("stm32f2", Target::Thumbv7);
+        chip_target_map.insert("stm32f3", Target::Thumbv7e);
+        chip_target_map.insert("stm32f4", Target::Thumbv7e);
+        chip_target_map.insert("stm32f7", Target::Thumbv7e);
+        chip_target_map.insert("stm32c0", Target::Thumbv6);
+        chip_target_map.insert("stm32g0", Target::Thumbv6);
+        chip_target_map.insert("stm32g4", Target::Thumbv7e);
+        chip_target_map.insert("stm32h5", Target::Thumbv8);
+        chip_target_map.insert("stm32h7", Target::Thumbv7e);
+        chip_target_map.insert("stm32l0", Target::Thumbv6);
+        chip_target_map.insert("stm32l1", Target::Thumbv7);
+        chip_target_map.insert("stm32l4", Target::Thumbv7e);
+        chip_target_map.insert("stm32l5", Target::Thumbv8);
+        chip_target_map.insert("stm32u5", Target::Thumbv8);
+        chip_target_map.insert("stm32wb", Target::Thumbv7e);
+        chip_target_map.insert("stm32wba", Target::Thumbv8);
+        chip_target_map.insert("stm32wl", Target::Thumbv7e);
+
+        // nrf
+        chip_target_map.insert("nrf52", Target::Thumbv7f);
+        chip_target_map.insert("nrf53", Target::Thumbv8);
+        chip_target_map.insert("nrf91", Target::Thumbv8);
+
+        for (series, target) in chip_target_map {
+            if chip.find(series).is_some() {
+                return Ok(target);
+            }
+        }
+
+        Err(())
+    }
+}
+
 #[derive(Parser)]
 #[command(name = "cargo")]
 #[command(bin_name = "cargo")]
@@ -59,14 +115,8 @@ pub enum EmbassyCommand {
         #[arg(help = "The name of the Embassy project to create.")]
         name: String,
 
-        #[arg(long, value_enum)]
-        family: Family,
-
         #[arg(long)]
         chip: String,
-
-        #[arg(long, value_enum)]
-        target: Target,
 
         #[arg(
             long,
