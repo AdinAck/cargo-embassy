@@ -8,10 +8,10 @@ pub(crate) fn init_file(name: &str, content: &str) {
         .create(true)
         .truncate(true)
         .open(name)
-        .expect(&format!("Failed to create \"{name}\"."));
+        .expect(&format!(r#"Failed to create "{name}"."#));
 
     file.write_all(content.as_bytes())
-        .expect(&format!("Failed to write to \"{name}\"."));
+        .expect(&format!(r#"Failed to write to "{name}"."#));
 
     println!("{}", name);
 }
@@ -28,7 +28,7 @@ pub(crate) fn cargo_add(name: &str, features: Option<Vec<&str>>, optional: bool)
     }
 
     cmd.output()
-        .expect(&format!("Failed to add \"{name}\" to manifest"));
+        .expect(&format!(r#"Failed to add "{name}" to manifest"#));
 
     println!("- {}", name);
 }

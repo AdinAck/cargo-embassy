@@ -8,7 +8,7 @@ use std::{env::set_current_dir, fs, io::Write, process::Command};
 use super::utils::{cargo_add, init_file};
 
 fn init_config(target: &Target, chip: &str) {
-    fs::create_dir_all(".cargo").expect("Failed to create \".cargo\".");
+    fs::create_dir_all(".cargo").expect(r#"Failed to create ".cargo"."#);
 
     init_file(
         ".cargo/config.toml",
@@ -71,26 +71,20 @@ fn init_main(family: &Family) {
 }
 
 fn init_manifest(name: &str, chip: &str, commit: Option<String>) {
-    let family = chip
-        .find("stm32")
-        .map(|_| Family::STM32)
-        .or(chip.find("nrf52").map(|_| Family::NRF))
-        .expect("Chip does not correspond to known family.");
+    let family = Family::try_from(chip).expect("Chip does not correspond to known family.");
 
     let source = if let Some(commit) = commit {
-        format!("rev = \"{commit}\"")
+        format!(r#"rev = "{commit}""#)
     } else {
-        "branch = \"main\"".into()
+        r#"branch = "main""#.into()
     };
 
     let features = match family {
         Family::STM32 => {
-            format!(
-                r#"["nightly", "memory-x", "{chip}", "time-driver-any", "exti", "unstable-pac"]"#
-            )
+            format!(r#"["memory-x", "{chip}", "time-driver-any", "exti", "unstable-pac"]"#)
         }
         Family::NRF => {
-            format!(r#"["nightly", "{chip}", "gpiote", "time-driver-rtc1"]"#)
+            format!(r#"["{chip}", "gpiote", "time-driver-rtc1"]"#)
         }
     };
 
@@ -114,13 +108,13 @@ fn init_manifest(name: &str, chip: &str, commit: Option<String>) {
     cargo_add("cortex-m-rt", None, false);
     cargo_add("defmt", None, true);
     cargo_add("defmt-rtt", None, true);
-    cargo_add("panic-probe", None, true);
+    cargo_add("panic-probe", Some(vec!["print-defmt"]), true);
     cargo_add("panic-halt", None, false);
 
     let mut file = fs::OpenOptions::new()
         .append(true)
         .open("Cargo.toml")
-        .expect("Failed to open \"Cargo.toml\".");
+        .expect(r#"Failed to open "Cargo.toml"."#);
 
     file.write_all(
         format!(
@@ -129,7 +123,7 @@ fn init_manifest(name: &str, chip: &str, commit: Option<String>) {
         )
         .as_bytes(),
     )
-    .expect("Failed to append to \"Cargo.toml\".");
+    .expect(r#"Failed to append to "Cargo.toml"."#);
 }
 
 pub fn init(name: String, chip: String, commit: Option<String>) {
