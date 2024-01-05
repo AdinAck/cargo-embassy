@@ -85,13 +85,31 @@ impl TryFrom<&str> for Target {
         chip_target_map.insert("nrf53", Target::Thumbv8);
         chip_target_map.insert("nrf91", Target::Thumbv8);
 
-        for (series, target) in chip_target_map {
-            if chip.find(series).is_some() {
-                return Ok(target);
+        // strip the last character until the key exists
+        for i in (1..=chip.len()).rev() {
+            if let Some(target) = chip_target_map.get(&chip[..i]) {
+                return Ok(target.clone());
             }
         }
 
         Err(())
+    }
+}
+
+#[derive(Debug, Clone, Default, ValueEnum)]
+#[value()]
+pub enum PanicHandler {
+    #[default]
+    Halt,
+    Reset,
+}
+
+impl PanicHandler {
+    pub(crate) fn str(&self) -> &str {
+        match self {
+            Self::Halt => "panic-halt".into(),
+            Self::Reset => "panic-reset".into(),
+        }
     }
 }
 
@@ -123,6 +141,8 @@ pub enum EmbassyCommand {
             help = "If provided, will use the version of Embassy from this commit, otherwise the latest version will be used."
         )]
         commit: Option<String>,
+        #[arg(value_enum, long, help = "Selects the panic handler.", default_value_t = PanicHandler::Halt)]
+        panic_handler: PanicHandler,
     },
     #[command(about = "Opens the Embassy documentation page in your web browser")]
     Docs,

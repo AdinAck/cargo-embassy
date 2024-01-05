@@ -1,5 +1,5 @@
 use crate::{
-    cli::{Family, Target},
+    cli::{Family, PanicHandler, Target},
     init::{nrf::init_memory_x, utils::get_family_and_target_from_chip},
 };
 use probe_rs::config::{get_target_by_name, search_chips};
@@ -57,20 +57,26 @@ fn init_fmt() {
     init_file("src/fmt.rs", include_str!("../templates/fmt.rs.template"));
 }
 
-fn init_main(family: &Family) {
+fn init_main(family: &Family, panic_handler: &PanicHandler) {
     match family {
         Family::STM32 => init_file(
             "src/main.rs",
-            include_str!("../templates/main.rs.stm32.template"),
+            &format!(
+                include_str!("../templates/main.rs.stm32.template"),
+                panic_handler = inflector::cases::snakecase::to_snake_case(panic_handler.str())
+            ),
         ),
         Family::NRF => init_file(
             "src/main.rs",
-            include_str!("../templates/main.rs.nrf.template"),
+            &format!(
+                include_str!("../templates/main.rs.nrf.template"),
+                panic_handler = inflector::cases::snakecase::to_snake_case(panic_handler.str())
+            ),
         ),
     }
 }
 
-fn init_manifest(name: &str, chip: &str, commit: Option<String>) {
+fn init_manifest(name: &str, chip: &str, commit: Option<String>, panic_handler: &PanicHandler) {
     let family = Family::try_from(chip).expect("Chip does not correspond to known family.");
 
     let source = if let Some(commit) = commit {
@@ -109,7 +115,7 @@ fn init_manifest(name: &str, chip: &str, commit: Option<String>) {
     cargo_add("defmt", None, true);
     cargo_add("defmt-rtt", None, true);
     cargo_add("panic-probe", Some(vec!["print-defmt"]), true);
-    cargo_add("panic-halt", None, false);
+    cargo_add(panic_handler.str(), None, false);
 
     let mut file = fs::OpenOptions::new()
         .append(true)
@@ -126,7 +132,7 @@ fn init_manifest(name: &str, chip: &str, commit: Option<String>) {
     .expect(r#"Failed to append to "Cargo.toml"."#);
 }
 
-pub fn init(name: String, chip: String, commit: Option<String>) {
+pub fn init(name: String, chip: String, commit: Option<String>, panic_handler: PanicHandler) {
     println!("Setting up Embassy project...");
 
     Command::new("cargo")
@@ -139,7 +145,12 @@ pub fn init(name: String, chip: String, commit: Option<String>) {
     println!("Cargo project created...");
 
     if let Ok(chips) = search_chips(&chip) {
-        let probe_target = get_target_by_name(chips.first().unwrap()).unwrap();
+        let probe_target = get_target_by_name(
+            chips
+                .first()
+                .expect("Selected chip is unknown to probe-rs."),
+        )
+        .unwrap();
 
         let (family, target) = get_family_and_target_from_chip(&chip);
 
@@ -156,9 +167,9 @@ pub fn init(name: String, chip: String, commit: Option<String>) {
         init_toolchain(&target);
         init_embed(&probe_target.name);
         init_build(&family);
-        init_manifest(&name, &chip, commit);
+        init_manifest(&name, &chip, commit, &panic_handler);
         init_fmt();
-        init_main(&family);
+        init_main(&family, &panic_handler);
 
         println!("Done! ✅");
     }
