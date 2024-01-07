@@ -1,6 +1,8 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::{collections::HashMap, fmt::Display};
 
+use crate::init::common::Error;
+
 #[derive(Debug, Clone, ValueEnum)]
 #[value()]
 pub enum Family {
@@ -18,16 +20,16 @@ impl Display for Family {
 }
 
 impl TryFrom<&str> for Family {
-    type Error = ();
+    type Error = Error;
 
     fn try_from(chip: &str) -> Result<Self, Self::Error> {
-        let family_raw = chip.get(..5).expect("Invalid chip name: Too short.");
+        let family_raw = chip.get(..5).map_or(Err(Error::InvalidChip), |s| Ok(s))?;
         if family_raw.to_lowercase().as_str() == "stm32" {
             Ok(Self::STM32)
         } else if &family_raw[..3] == "nrf" {
             Ok(Self::NRF)
         } else {
-            Err(())
+            Err(Error::InvalidChip)
         }
     }
 }
@@ -55,7 +57,7 @@ impl Display for Target {
 }
 
 impl TryFrom<&str> for Target {
-    type Error = ();
+    type Error = Error;
     fn try_from(chip: &str) -> Result<Self, Self::Error> {
         let mut chip_target_map = HashMap::new();
 
@@ -92,7 +94,7 @@ impl TryFrom<&str> for Target {
             }
         }
 
-        Err(())
+        Err(Error::InvalidChip)
     }
 }
 

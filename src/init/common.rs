@@ -2,64 +2,84 @@ use crate::{
     cli::{Family, PanicHandler, Target},
     init::{nrf::init_memory_x, utils::get_family_and_target_from_chip},
 };
+use indicatif::ProgressBar;
 use probe_rs::config::{get_target_by_name, search_chips};
 use std::{env::set_current_dir, fs, io::Write, process::Command};
 
 use super::utils::{cargo_add, init_file};
 
-fn init_config(target: &Target, chip: &str) {
-    fs::create_dir_all(".cargo").expect(r#"Failed to create ".cargo"."#);
+#[derive(Debug)]
+pub enum Error {
+    CreateCargo,
+    CreateFile(String),
+    ChangeDir,
+    InvalidChip,
+    CargoAdd(String),
+}
+
+fn init_config(pb: &ProgressBar, target: &Target, chip: &str) -> Result<(), Error> {
+    fs::create_dir_all(".cargo").map_err(|_| Error::CreateFile(".cargo/config.toml".into()))?;
 
     init_file(
+        pb,
         ".cargo/config.toml",
         &format!(
             include_str!("../templates/config.toml.template"),
             target = target,
             chip = chip
         ),
-    );
+    )
 }
 
-fn init_toolchain(target: &Target) {
+fn init_toolchain(pb: &ProgressBar, target: &Target) -> Result<(), Error> {
     init_file(
+        pb,
         "rust-toolchain.toml",
         &format!(
             include_str!("../templates/rust-toolchain.toml.template"),
             target = target
         ),
-    );
+    )
 }
 
-fn init_build(family: &Family) {
+fn init_build(pb: &ProgressBar, family: &Family) -> Result<(), Error> {
     match family {
         Family::STM32 => init_file(
+            pb,
             "build.rs",
             include_str!("../templates/build.rs.stm32.template"),
         ),
         Family::NRF => init_file(
+            pb,
             "build.rs",
             include_str!("../templates/build.rs.nrf.template"),
         ),
     }
 }
 
-fn init_embed(chip: &str) {
+fn init_embed(pb: &ProgressBar, chip: &str) -> Result<(), Error> {
     init_file(
+        pb,
         "Embed.toml",
         &format!(
             include_str!("../templates/Embed.toml.template"),
             chip = chip
         ),
-    );
+    )
 }
 
-fn init_fmt() {
-    init_file("src/fmt.rs", include_str!("../templates/fmt.rs.template"));
+fn init_fmt(pb: &ProgressBar) -> Result<(), Error> {
+    init_file(
+        pb,
+        "src/fmt.rs",
+        include_str!("../templates/fmt.rs.template"),
+    )
 }
 
-fn init_main(family: &Family, panic_handler: &PanicHandler) {
+fn init_main(pb: &ProgressBar, family: &Family, panic_handler: &PanicHandler) -> Result<(), Error> {
     match family {
         Family::STM32 => init_file(
+            pb,
             "src/main.rs",
             &format!(
                 include_str!("../templates/main.rs.stm32.template"),
@@ -67,6 +87,7 @@ fn init_main(family: &Family, panic_handler: &PanicHandler) {
             ),
         ),
         Family::NRF => init_file(
+            pb,
             "src/main.rs",
             &format!(
                 include_str!("../templates/main.rs.nrf.template"),
@@ -76,8 +97,14 @@ fn init_main(family: &Family, panic_handler: &PanicHandler) {
     }
 }
 
-fn init_manifest(name: &str, chip: &str, commit: Option<String>, panic_handler: &PanicHandler) {
-    let family = Family::try_from(chip).expect("Chip does not correspond to known family.");
+fn init_manifest(
+    pb: &ProgressBar,
+    name: &str,
+    chip: &str,
+    commit: Option<String>,
+    panic_handler: &PanicHandler,
+) -> Result<(), Error> {
+    let family = Family::try_from(chip)?;
 
     let source = if let Some(commit) = commit {
         format!(r#"rev = "{commit}""#)
@@ -95,6 +122,7 @@ fn init_manifest(name: &str, chip: &str, commit: Option<String>, panic_handler: 
     };
 
     init_file(
+        pb,
         "Cargo.toml",
         &format!(
             include_str!("../templates/Cargo.toml.template"),
@@ -103,24 +131,25 @@ fn init_manifest(name: &str, chip: &str, commit: Option<String>, panic_handler: 
             features = features,
             source = source
         ),
-    );
+    )?;
 
     // NOTE: should be threaded proably
     cargo_add(
+        pb,
         "cortex-m",
         Some(vec!["inline-asm", "critical-section-single-core"]),
         false,
-    );
-    cargo_add("cortex-m-rt", None, false);
-    cargo_add("defmt", None, true);
-    cargo_add("defmt-rtt", None, true);
-    cargo_add("panic-probe", Some(vec!["print-defmt"]), true);
-    cargo_add(panic_handler.str(), None, false);
+    )?;
+    cargo_add(pb, "cortex-m-rt", None, false)?;
+    cargo_add(pb, "defmt", None, true)?;
+    cargo_add(pb, "defmt-rtt", None, true)?;
+    cargo_add(pb, "panic-probe", Some(vec!["print-defmt"]), true)?;
+    cargo_add(pb, panic_handler.str(), None, false)?;
 
     let mut file = fs::OpenOptions::new()
         .append(true)
         .open("Cargo.toml")
-        .expect(r#"Failed to open "Cargo.toml"."#);
+        .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
 
     file.write_all(
         format!(
@@ -129,48 +158,52 @@ fn init_manifest(name: &str, chip: &str, commit: Option<String>, panic_handler: 
         )
         .as_bytes(),
     )
-    .expect(r#"Failed to append to "Cargo.toml"."#);
+    .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+
+    Ok(())
 }
 
-pub fn init(name: String, chip: String, commit: Option<String>, panic_handler: PanicHandler) {
-    println!("Setting up Embassy project...");
-
+pub(crate) fn init(
+    pb: &ProgressBar,
+    name: String,
+    chip: String,
+    commit: Option<String>,
+    panic_handler: PanicHandler,
+) -> Result<(), Error> {
+    pb.set_message("Create cargo project");
     Command::new("cargo")
         .args(["new", &name])
         .output()
-        .expect("Failed to create cargo project.");
+        .map_err(|_| Error::CreateCargo)?;
 
-    set_current_dir(&name).expect("Failed to change directory to cargo project.");
+    set_current_dir(&name).map_err(|_| Error::ChangeDir)?;
 
-    println!("Cargo project created...");
-
+    pb.set_message("Searching chips");
     if let Ok(chips) = search_chips(&chip) {
-        let probe_target = get_target_by_name(
-            chips
-                .first()
-                .expect("Selected chip is unknown to probe-rs."),
-        )
-        .unwrap();
+        let probe_target =
+            get_target_by_name(chips.first().map_or(Err(Error::InvalidChip), |t| Ok(t))?).unwrap();
 
-        let (family, target) = get_family_and_target_from_chip(&chip);
+        let (family, target) = get_family_and_target_from_chip(&chip)?;
 
         match family {
             Family::STM32 => {
                 // nothing special to generate for stm32
             }
             Family::NRF => {
-                init_memory_x();
+                init_memory_x(&pb)?;
             }
         }
 
-        init_config(&target, &probe_target.name);
-        init_toolchain(&target);
-        init_embed(&probe_target.name);
-        init_build(&family);
-        init_manifest(&name, &chip, commit, &panic_handler);
-        init_fmt();
-        init_main(&family, &panic_handler);
+        init_config(&pb, &target, &probe_target.name)?;
+        init_toolchain(&pb, &target)?;
+        init_embed(&pb, &probe_target.name)?;
+        init_build(&pb, &family)?;
+        init_manifest(&pb, &name, &chip, commit, &panic_handler)?;
+        init_fmt(&pb)?;
+        init_main(&pb, &family, &panic_handler)?;
 
-        println!("Done! ✅");
+        Ok(())
+    } else {
+        Err(Error::InvalidChip)
     }
 }
