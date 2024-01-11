@@ -3,7 +3,7 @@
 set -euxo pipefail
 
 # build cargo-embassy
-cargo build --release -q
+cargo build --release
 
 # create test directory
 if [ -d "ci" ]; then
@@ -16,11 +16,11 @@ cd ci
 # generation
 
 # stm
-../target/release/cargo-embassy embassy init test-stm32g0 --chip stm32g031k8 > /dev/null
-../target/release/cargo-embassy embassy init test-stm32g4 --chip stm32g431rb --panic-handler reset > /dev/null
+../target/release/cargo-embassy embassy init test-stm32g0 --chip stm32g031k8
+../target/release/cargo-embassy embassy init test-stm32g4 --chip stm32g431rb --panic-handler reset
 
 # nrf
-../target/release/cargo-embassy embassy init test-nrf52840 --chip nrf52840 > /dev/null
+../target/release/cargo-embassy embassy init test-nrf52840 --chip nrf52840
 
 # demo memory.x file
 echo "MEMORY
@@ -37,9 +37,9 @@ echo "MEMORY
 }" > test-nrf52840/memory.x
 
 # compile
-cd test-stm32g0; cargo build -q; cargo build --features=defmt -q
-cd ../test-stm32g4; cargo build -q; cargo build --features=defmt -q
-cd ../test-nrf52840; cargo build -q; cargo build --features=defmt -q
+cd test-stm32g0; cargo build; cargo build --features=defmt
+cd ../test-stm32g4; cargo build; cargo build --features=defmt
+cd ../test-nrf52840; cargo build; cargo build --features=defmt
 
 # clean up
 cd ../..
