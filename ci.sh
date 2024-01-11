@@ -5,22 +5,26 @@ set -euxo pipefail
 # build cargo-embassy
 cargo build --release
 
+test_dir="/tmp/ci"
+
 # create test directory
-if [ -d "ci" ]; then
-    rm -r "ci"
+if [ -d $test_dir ]; then
+    rm -r $test_dir
 fi
 
-mkdir ci
-cd ci
+cwd=`pwd`
+
+mkdir $test_dir
+cd $test_dir
 
 # generation
 
 # stm
-../target/release/cargo-embassy embassy init test-stm32g0 --chip stm32g031k8
-../target/release/cargo-embassy embassy init test-stm32g4 --chip stm32g431rb --panic-handler reset
+$cwd/target/release/cargo-embassy embassy init test-stm32g0 --chip stm32g031k8
+$cwd/target/release/cargo-embassy embassy init test-stm32g4 --chip stm32g431rb --panic-handler reset
 
 # nrf
-../target/release/cargo-embassy embassy init test-nrf52840 --chip nrf52840
+$cwd/target/release/cargo-embassy embassy init test-nrf52840 --chip nrf52840
 
 # demo memory.x file
 echo "MEMORY
