@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/rust,macos
-# Edit at https://www.toptal.com/developers/gitignore?templates=rust,macos
+# Created by https://www.toptal.com/developers/gitignore/api/macos,rust,visualstudiocode
+# Edit at https://www.toptal.com/developers/gitignore?templates=macos,rust,visualstudiocode
 
 ### macOS ###
 # General
@@ -49,5 +49,24 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
-# End of https://www.toptal.com/developers/gitignore/api/rust,macos
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+.ionide
+
+# End of https://www.toptal.com/developers/gitignore/api/macos,rust,visualstudiocode
 

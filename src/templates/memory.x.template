@@ -1,7 +1,7 @@
 MEMORY
-{
+{{
   /* NOTE 1 K = 1 KiBi = 1024 bytes */
   /* You must fill in these values for your application */
-  FLASH : ORIGIN = 0x00000000, LENGTH = ??
-  RAM : ORIGIN = 0x20000000, LENGTH = ??
-}
+  FLASH : ORIGIN = 0x{flash_origin:08x}, LENGTH = {flash_len}K
+  RAM : ORIGIN = 0x{ram_origin:08x}, LENGTH = {ram_len}K
+}}

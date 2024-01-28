@@ -1,7 +1,20 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::{collections::HashMap, fmt::Display};
 
-use crate::init::common::Error;
+#[derive(Debug)]
+pub enum InvalidChip {
+    Unknown,
+    Ambiguous,
+}
+
+#[derive(Debug)]
+pub enum Error {
+    CreateCargo,
+    CreateFile(String),
+    ChangeDir,
+    InvalidChip(InvalidChip),
+    CargoAdd(String),
+}
 
 #[derive(Debug, Clone, ValueEnum)]
 #[value()]
@@ -23,13 +36,15 @@ impl TryFrom<&str> for Family {
     type Error = Error;
 
     fn try_from(chip: &str) -> Result<Self, Self::Error> {
-        let family_raw = chip.get(..5).map_or(Err(Error::InvalidChip), |s| Ok(s))?;
+        let family_raw = chip
+            .get(..5)
+            .map_or(Err(Error::InvalidChip(InvalidChip::Unknown)), |s| Ok(s))?;
         if family_raw.to_lowercase().as_str() == "stm32" {
             Ok(Self::STM32)
         } else if &family_raw[..3] == "nrf" {
             Ok(Self::NRF)
         } else {
-            Err(Error::InvalidChip)
+            Err(Error::InvalidChip(InvalidChip::Unknown))
         }
     }
 }
@@ -94,7 +109,106 @@ impl TryFrom<&str> for Target {
             }
         }
 
-        Err(Error::InvalidChip)
+        Err(Error::InvalidChip(InvalidChip::Unknown))
+    }
+}
+
+pub(crate) struct NRFMemoryRegion {
+    pub flash_origin: usize,
+    pub flash_length: usize,
+
+    pub ram_origin: usize,
+    pub ram_length: usize,
+}
+
+impl NRFMemoryRegion {
+    const NRF52805: Self = Self {
+        flash_origin: 0,
+        flash_length: 192,
+        ram_origin: 0x2 << 28,
+        ram_length: 24,
+    };
+    const NRF52810: Self = Self::NRF52805;
+    const NRF52811: Self = Self::NRF52805;
+
+    const NRF52820: Self = Self {
+        flash_origin: 0,
+        flash_length: 256,
+        ram_origin: 0x2 << 28,
+        ram_length: 32,
+    };
+
+    const NRF52832_XXAA: Self = Self {
+        flash_origin: 0,
+        flash_length: 512,
+        ram_origin: 0x2 << 28,
+        ram_length: 64,
+    };
+    const NRF52832_XXAB: Self = Self::NRF52820;
+
+    const NRF52833: Self = Self {
+        flash_origin: 0,
+        flash_length: 512,
+        ram_origin: 0x2 << 28,
+        ram_length: 128,
+    };
+
+    const NRF52840: Self = Self {
+        flash_origin: 0,
+        flash_length: 1024,
+        ram_origin: 0x2 << 28,
+        ram_length: 256,
+    };
+}
+
+impl TryFrom<&str> for NRFMemoryRegion {
+    type Error = Error;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "nrf52805" => Ok(Self::NRF52805),
+            "nrf52810" => Ok(Self::NRF52810),
+            "nrf52811" => Ok(Self::NRF52811),
+            "nrf52820" => Ok(Self::NRF52820),
+            "nrf52832" => Err(Error::InvalidChip(InvalidChip::Ambiguous)),
+            "nrf52832_xxaa" => Ok(Self::NRF52832_XXAA),
+            "nrf52832_xxab" => Ok(Self::NRF52832_XXAB),
+            "nrf52833" => Ok(Self::NRF52833),
+            "nrf52840" => Ok(Self::NRF52840),
+            // TODO: nrf53x and nrf91x
+            _ => Err(Error::InvalidChip(InvalidChip::Unknown)),
+        }
+    }
+}
+
+pub(crate) struct Chip {
+    pub family: Family,
+    pub target: Target,
+    pub name: String,
+    pub memory: Option<NRFMemoryRegion>,
+}
+
+impl TryFrom<&str> for Chip {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let family = Family::try_from(value)?;
+        let target = Target::try_from(value)?;
+
+        Ok(match family {
+            Family::STM32 => Self {
+                family,
+                target,
+                name: value.into(),
+                memory: None,
+            },
+            Family::NRF => Self {
+                family,
+                target,
+                // FRAGILE: "_" is used to coerce probe-rs chip search
+                name: value.split("_").into_iter().next().unwrap().into(),
+                memory: Some(NRFMemoryRegion::try_from(value)?),
+            },
+        })
     }
 }
 
@@ -128,24 +242,27 @@ pub struct Embassy {
     pub command: EmbassyCommand,
 }
 
+#[derive(Debug, Clone, Args)]
+pub struct InitArgs {
+    #[arg(help = "The name of the Embassy project to create.")]
+    pub name: String,
+
+    #[arg(long = "chip", help = "Specifies the target chip.")]
+    pub chip_name: String,
+
+    #[arg(
+        long,
+        help = "If provided, the version of Embassy will be locked to the provided commit hash. Otherwise the latest version will be used."
+    )]
+    pub commit: Option<String>,
+    #[arg(value_enum, long, help = "Selects the panic handler.", default_value_t = PanicHandler::Halt)]
+    pub panic_handler: PanicHandler,
+}
+
 #[derive(Debug, Clone, Subcommand)]
 pub enum EmbassyCommand {
     #[command(about = "Initializes an Embassy project in the current workspace")]
-    Init {
-        #[arg(help = "The name of the Embassy project to create.")]
-        name: String,
-
-        #[arg(long)]
-        chip: String,
-
-        #[arg(
-            long,
-            help = "If provided, will use the version of Embassy from this commit, otherwise the latest version will be used."
-        )]
-        commit: Option<String>,
-        #[arg(value_enum, long, help = "Selects the panic handler.", default_value_t = PanicHandler::Halt)]
-        panic_handler: PanicHandler,
-    },
+    Init(InitArgs),
     #[command(about = "Opens the Embassy documentation page in your web browser")]
     Docs,
 }

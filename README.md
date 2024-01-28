@@ -55,5 +55,3 @@ cargo embassy init my_project --chip stm32g031k8 --commit 5bc75578260f4c644cc060
 ```sh
 cargo embassy init my_project --chip nrf52840
 ```
-
-Update `memory.x` appropriately.
