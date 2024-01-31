@@ -6,11 +6,6 @@ name = "{name}"
 version = "0.1.0"
 
 [dependencies]
-embassy-executor = {{ git = "https://github.com/embassy-rs/embassy", {source}, features = ["arch-cortex-m", "executor-thread", "integrated-timers"] }}
-embassy-sync = {{ git = "https://github.com/embassy-rs/embassy", {source} }}
-embassy-futures = {{ git = "https://github.com/embassy-rs/embassy", {source} }}
-embassy-time = {{ git = "https://github.com/embassy-rs/embassy", {source}, features = ["tick-hz-32_768"] }}
-embassy-{family} = {{ git = "https://github.com/embassy-rs/embassy", {source}, features = {features} }}
 
 [[bin]]
 name = "{name}"

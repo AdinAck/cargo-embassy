@@ -250,11 +250,6 @@ pub struct InitArgs {
     #[arg(long = "chip", help = "Specifies the target chip.")]
     pub chip_name: String,
 
-    #[arg(
-        long,
-        help = "If provided, the version of Embassy will be locked to the provided commit hash. Otherwise the latest version will be used."
-    )]
-    pub commit: Option<String>,
     #[arg(value_enum, long, help = "Selects the panic handler.", default_value_t = PanicHandler::Halt)]
     pub panic_handler: PanicHandler,
 }

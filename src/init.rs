@@ -30,7 +30,7 @@ impl Init {
 
     fn run_inner(&self, mut args: InitArgs) -> Result<(), Error> {
         // for convenience
-        args.chip_name = args.chip_name.replace("-", "_");
+        args.chip_name = args.chip_name.replace("-", "_").to_lowercase();
 
         let (chip, probe_target_name) = self.get_target_info(&args.chip_name)?;
 
@@ -44,7 +44,7 @@ impl Init {
         self.init_toolchain(&chip.target)?;
         self.init_embed(&probe_target_name)?;
         self.init_build(&chip.family)?;
-        self.init_manifest(&args.name, &chip, &args.commit, &args.panic_handler)?;
+        self.init_manifest(&args.name, &chip, &args.panic_handler)?;
         self.init_fmt()?;
         self.init_main(&chip.family, &args.panic_handler)?;
 
@@ -123,39 +123,45 @@ impl Init {
         &self,
         name: &str,
         chip: &Chip,
-        commit: &Option<String>,
         panic_handler: &PanicHandler,
     ) -> Result<(), Error> {
-        let source = if let Some(commit) = commit {
-            format!(r#"rev = "{commit}""#)
-        } else {
-            r#"branch = "main""#.into()
-        };
-
-        let features = match chip.family {
-            Family::STM32 => {
-                format!(
-                    r#"["memory-x", "{}", "time-driver-any", "exti", "unstable-pac"]"#,
-                    chip.name
-                )
-            }
-            Family::NRF => {
-                format!(r#"["{}", "gpiote", "time-driver-rtc1"]"#, chip.name)
-            }
-        };
-
         self.create_file(
             "Cargo.toml",
-            &format!(
-                include_str!("templates/Cargo.toml.template"),
-                name = name,
-                family = chip.family,
-                features = features,
-                source = source
-            ),
+            &format!(include_str!("templates/Cargo.toml.template"), name = name),
         )?;
 
         // NOTE: should be threaded proably
+        self.cargo_add(
+            "embassy-executor",
+            Some(vec![
+                "arch-cortex-m",
+                "executor-thread",
+                "integrated-timers",
+            ]),
+            false,
+        )?;
+        self.cargo_add("embassy-sync", None, false)?;
+        self.cargo_add("embassy-futures", None, false)?;
+        self.cargo_add("embassy-time", Some(vec!["tick-hz-32_768"]), false)?;
+
+        match chip.family {
+            Family::STM32 => self.cargo_add(
+                "embassy-stm32",
+                Some(vec![
+                    "memory-x",
+                    chip.name.as_str(),
+                    "time-driver-any",
+                    "exti",
+                    "unstable-pac",
+                ]),
+                false,
+            ),
+            Family::NRF => self.cargo_add(
+                "embassy-nrf",
+                Some(vec![chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
+                false,
+            ),
+        }?;
         self.cargo_add(
             "cortex-m",
             Some(vec!["inline-asm", "critical-section-single-core"]),
