@@ -14,9 +14,10 @@ pub enum Error {
     ChangeDir,
     InvalidChip(InvalidChip),
     CargoAdd(String),
+    ErroneousSoftdevice,
 }
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, PartialEq, ValueEnum)]
 #[value()]
 pub enum Family {
     STM32,
@@ -223,8 +224,30 @@ pub enum PanicHandler {
 impl PanicHandler {
     pub(crate) fn str(&self) -> &str {
         match self {
-            Self::Halt => "panic-halt".into(),
-            Self::Reset => "panic-reset".into(),
+            Self::Halt => "panic-halt",
+            Self::Reset => "panic-reset",
+        }
+    }
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+#[value()]
+pub enum Softdevice {
+    S112,
+    S113,
+    S122,
+    S132,
+    S140,
+}
+
+impl Softdevice {
+    pub(crate) fn str(&self) -> &str {
+        match self {
+            Self::S112 => "s112",
+            Self::S113 => "s113",
+            Self::S122 => "s122",
+            Self::S132 => "s132",
+            Self::S140 => "s140",
         }
     }
 }
@@ -252,6 +275,9 @@ pub struct InitArgs {
 
     #[arg(value_enum, long, help = "Selects the panic handler.", default_value_t = PanicHandler::Halt)]
     pub panic_handler: PanicHandler,
+
+    #[arg(long, help = "Configure for use with a Softdevice (NRF only).")]
+    pub softdevice: Option<Softdevice>,
 }
 
 #[derive(Debug, Clone, Subcommand)]

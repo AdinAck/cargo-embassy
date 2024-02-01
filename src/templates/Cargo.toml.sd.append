@@ -1,0 +1,14 @@
+
+[features]
+defmt = [
+    "dep:defmt",
+    "dep:defmt-rtt",
+    "dep:panic-probe",
+    "embassy-executor/defmt",
+    "embassy-sync/defmt",
+    "embassy-futures/defmt",
+    "embassy-time/defmt",
+    "embassy-time/defmt-timestamp-uptime",
+    "embassy-nrf/defmt",
+    "nrf-softdevice/defmt",
+]

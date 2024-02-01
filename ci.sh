@@ -25,7 +25,7 @@ $cwd/target/release/cargo-embassy embassy init test-stm32g4 --chip stm32g431rb -
 
 # nrf
 $cwd/target/release/cargo-embassy embassy init test-nrf52840 --chip nrf52840
-$cwd/target/release/cargo-embassy embassy init test-nrf52832 --chip nrf52832-xxab
+$cwd/target/release/cargo-embassy embassy init test-nrf52832 --chip nrf52832-xxab --softdevice s132
 
 # compile
 cd test-stm32g0; cargo build; cargo build --features=defmt
@@ -35,4 +35,4 @@ cd ../test-nrf52832; cargo build; cargo build --features=defmt
 
 # clean up
 cd ../..
-rm -r ci
+# rm -r ci

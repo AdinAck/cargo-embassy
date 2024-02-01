@@ -3,7 +3,7 @@ use std::{env::set_current_dir, fs, io::Write, process::Command, time::Duration}
 use indicatif::ProgressBar;
 use probe_rs::config::{get_target_by_name, search_chips};
 
-use crate::types::{Chip, Error, Family, InitArgs, InvalidChip, PanicHandler, Target};
+use crate::types::{Chip, Error, Family, InitArgs, InvalidChip, PanicHandler, Softdevice, Target};
 
 pub struct Init {
     pb: ProgressBar,
@@ -34,6 +34,11 @@ impl Init {
 
         let (chip, probe_target_name) = self.get_target_info(&args.chip_name)?;
 
+        // validate softdevice <--> nrf
+        if args.softdevice.is_some() && chip.family != Family::NRF {
+            return Err(Error::ErroneousSoftdevice);
+        }
+
         self.create_proj(&args.name)?;
 
         if let Family::NRF = chip.family {
@@ -44,9 +49,11 @@ impl Init {
         self.init_toolchain(&chip.target)?;
         self.init_embed(&probe_target_name)?;
         self.init_build(&chip.family)?;
-        self.init_manifest(&args.name, &chip, &args.panic_handler)?;
+        self.init_manifest(&args.name, &chip, &args.panic_handler, &args.softdevice)?;
         self.init_fmt()?;
-        self.init_main(&chip.family, &args.panic_handler)?;
+        self.init_main(&chip.family, &args.panic_handler, &args.softdevice)?;
+
+        self.pb.println("[ACTION NEEDED] You must now flash the Softdevice and configure memory.x. Instructions can be found here: https://github.com/embassy-rs/nrf-softdevice#running-examples.");
 
         Ok(())
     }
@@ -124,6 +131,7 @@ impl Init {
         name: &str,
         chip: &Chip,
         panic_handler: &PanicHandler,
+        softdevice: &Option<Softdevice>,
     ) -> Result<(), Error> {
         self.create_file(
             "Cargo.toml",
@@ -162,9 +170,29 @@ impl Init {
                 false,
             ),
         }?;
+
+        if let Some(softdevice) = softdevice {
+            self.cargo_add(
+                "nrf-softdevice",
+                Some(vec![
+                    chip.name.as_str(),
+                    softdevice.str(),
+                    "ble-peripheral",
+                    "ble-gatt-server",
+                    "critical-section-impl",
+                ]),
+                false,
+            )?;
+            self.cargo_add(&format!("nrf-softdevice-{}", softdevice.str()), None, false)?;
+        }
+
         self.cargo_add(
             "cortex-m",
-            Some(vec!["inline-asm", "critical-section-single-core"]),
+            Some(if softdevice.is_some() {
+                vec!["inline-asm"]
+            } else {
+                vec!["inline-asm", "critical-section-single-core"]
+            }),
             false,
         )?;
         self.cargo_add("cortex-m-rt", None, false)?;
@@ -179,10 +207,14 @@ impl Init {
             .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
 
         file.write_all(
-            format!(
-                include_str!("templates/Cargo.toml.append"),
-                family = chip.family
-            )
+            if softdevice.is_some() {
+                include_str!("templates/Cargo.toml.sd.append").into()
+            } else {
+                format!(
+                    include_str!("templates/Cargo.toml.append"),
+                    family = chip.family
+                )
+            }
             .as_bytes(),
         )
         .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
@@ -194,7 +226,12 @@ impl Init {
         self.create_file("src/fmt.rs", include_str!("templates/fmt.rs.template"))
     }
 
-    fn init_main(&self, family: &Family, panic_handler: &PanicHandler) -> Result<(), Error> {
+    fn init_main(
+        &self,
+        family: &Family,
+        panic_handler: &PanicHandler,
+        softdevice: &Option<Softdevice>,
+    ) -> Result<(), Error> {
         match family {
             Family::STM32 => self.create_file(
                 "src/main.rs",
@@ -205,10 +242,19 @@ impl Init {
             ),
             Family::NRF => self.create_file(
                 "src/main.rs",
-                &format!(
-                    include_str!("templates/main.rs.nrf.template"),
-                    panic_handler = inflector::cases::snakecase::to_snake_case(panic_handler.str())
-                ),
+                &if softdevice.is_some() {
+                    format!(
+                        include_str!("templates/main.rs.nrf.sd.template"),
+                        panic_handler =
+                            inflector::cases::snakecase::to_snake_case(panic_handler.str())
+                    )
+                } else {
+                    format!(
+                        include_str!("templates/main.rs.nrf.template"),
+                        panic_handler =
+                            inflector::cases::snakecase::to_snake_case(panic_handler.str())
+                    )
+                },
             ),
         }
     }
