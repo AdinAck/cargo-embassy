@@ -46,12 +46,12 @@ cargo embassy init my_project --chip stm32g031k8
 
 That's it! You can `cargo flash` or `cargo run --features=defmt`.
 
-**Create a new Embassy project for the STM32G031K8 with a specific Embassy version:**
-```sh
-cargo embassy init my_project --chip stm32g031k8 --commit 5bc75578260f4c644cc060e6458a05d7fc0ffb41
-```
-
 **Create a new Embassy project for the NRF52840:**
 ```sh
 cargo embassy init my_project --chip nrf52840
+```
+
+**Create a new Embassy project for the NRF52832_xxAA and Softdevice S132**
+```sh
+cargo embassy init my_project --chip nrf52832_xxAA --softdevice s132
 ```
