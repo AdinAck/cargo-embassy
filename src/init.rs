@@ -41,19 +41,23 @@ impl Init {
 
         self.create_proj(&args.name)?;
 
-        if let Family::NRF = chip.family {
-            self.init_memory_x(&chip)?;
-        }
-
         self.init_config(&chip.target, &probe_target_name)?;
         self.init_toolchain(&chip.target)?;
         self.init_embed(&probe_target_name)?;
         self.init_build(&chip.family)?;
-        self.init_manifest(&args.name, &chip, &args.panic_handler, &args.softdevice)?;
+        self.init_manifest(
+            &args.name,
+            &chip,
+            &args.panic_handler,
+            args.softdevice.as_ref(),
+        )?;
         self.init_fmt()?;
-        self.init_main(&chip.family, &args.panic_handler, &args.softdevice)?;
+        self.init_main(&chip.family, &args.panic_handler, args.softdevice.as_ref())?;
 
-        self.pb.println("[ACTION NEEDED] You must now flash the Softdevice and configure memory.x. Instructions can be found here: https://github.com/embassy-rs/nrf-softdevice#running-examples.");
+        if let Family::NRF = chip.family {
+            self.init_memory_x(&chip)?;
+            self.pb.println("[ACTION NEEDED] You must now flash the Softdevice and configure memory.x. Instructions can be found here: https://github.com/embassy-rs/nrf-softdevice#running-examples.");
+        }
 
         Ok(())
     }
@@ -131,7 +135,7 @@ impl Init {
         name: &str,
         chip: &Chip,
         panic_handler: &PanicHandler,
-        softdevice: &Option<Softdevice>,
+        softdevice: Option<&Softdevice>,
     ) -> Result<(), Error> {
         self.create_file(
             "Cargo.toml",
@@ -230,7 +234,7 @@ impl Init {
         &self,
         family: &Family,
         panic_handler: &PanicHandler,
-        softdevice: &Option<Softdevice>,
+        softdevice: Option<&Softdevice>,
     ) -> Result<(), Error> {
         match family {
             Family::STM32 => self.create_file(
