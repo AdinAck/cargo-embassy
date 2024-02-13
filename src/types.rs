@@ -17,6 +17,7 @@ pub enum Error {
     ErroneousSoftdevice,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, PartialEq, ValueEnum)]
 #[value()]
 pub enum Family {
@@ -39,7 +40,7 @@ impl TryFrom<&str> for Family {
     fn try_from(chip: &str) -> Result<Self, Self::Error> {
         let family_raw = chip
             .get(..5)
-            .map_or(Err(Error::InvalidChip(InvalidChip::Unknown)), |s| Ok(s))?;
+            .ok_or(Error::InvalidChip(InvalidChip::Unknown))?;
         if family_raw.to_lowercase().as_str() == "stm32" {
             Ok(Self::STM32)
         } else if &family_raw[..3] == "nrf" {
@@ -206,7 +207,7 @@ impl TryFrom<&str> for Chip {
                 family,
                 target,
                 // FRAGILE: "_" is used to coerce probe-rs chip search
-                name: value.split("_").into_iter().next().unwrap().into(),
+                name: value.split('_').next().unwrap().into(),
                 memory: Some(NRFMemoryRegion::try_from(value)?),
             },
         })
