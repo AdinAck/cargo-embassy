@@ -13,7 +13,7 @@ Get up and running with Embassy in seconds.
 
 # TODO
 
-Refer to the tracking issues for propsed changes.
+Refer to the tracking issues for proposed changes.
 
 # Installation
 
