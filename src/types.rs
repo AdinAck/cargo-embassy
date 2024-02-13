@@ -80,14 +80,18 @@ impl TryFrom<&str> for Target {
         use Target::*;
 
         let targets = [
+            // nRF
+            ("nrf52", Thumbv7f),
+            ("nrf53", Thumbv8),
+            ("nrf91", Thumbv8),
             // STM
+            ("stm32c0", Thumbv6),
             ("stm32f0", Thumbv6),
             ("stm32f1", Thumbv7),
             ("stm32f2", Thumbv7),
             ("stm32f3", Thumbv7e),
             ("stm32f4", Thumbv7e),
             ("stm32f7", Thumbv7e),
-            ("stm32c0", Thumbv6),
             ("stm32g0", Thumbv6),
             ("stm32g4", Thumbv7e),
             ("stm32h5", Thumbv8),
@@ -100,10 +104,6 @@ impl TryFrom<&str> for Target {
             ("stm32wb", Thumbv7e),
             ("stm32wba", Thumbv8),
             ("stm32wl", Thumbv7e),
-            // nRF
-            ("nrf52", Thumbv7f),
-            ("nrf53", Thumbv8),
-            ("nrf91", Thumbv8),
         ];
 
         targets
