@@ -37,6 +37,18 @@ You can see how the `init` command works with:
 cargo embassy init --help
 ```
 
+To deploy the project, run:
+```
+cargo embed <OPTIONS>
+```
+
+...or to run the project with RTT:
+```
+cargo run --features defmt
+```
+
+> `defmt` is *opt-in* so for RTT the `defmt` feature must be enabled.
+
 # Examples
 
 **Create a new Embassy project for the STM32G031K8:**
