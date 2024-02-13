@@ -1,0 +1,4 @@
+[features]
+defmt = ["dep:defmt"]
+defmt-rtt = ["dep:defmt-rtt"]
+panic-probe = ["dep:panic-probe"]

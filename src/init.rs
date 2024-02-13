@@ -1,4 +1,10 @@
-use std::{env::set_current_dir, fs, io::Write, process::Command, time::Duration};
+use std::{
+    env::set_current_dir,
+    fs,
+    io::{Read, Write},
+    process::Command,
+    time::Duration,
+};
 
 use indicatif::ProgressBar;
 use probe_rs::config::{get_target_by_name, search_chips};
@@ -206,9 +212,19 @@ impl Init {
         self.cargo_add(panic_handler.str(), None, false)?;
 
         let mut file = fs::OpenOptions::new()
+            .read(true)
             .append(true)
             .open("Cargo.toml")
             .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+
+        // really gross patch for cargo version discontinuity
+        // somewhere between cargo 1.72 and 1.76 the behavior of "cargo add" changed
+        let mut buf = String::new();
+        file.read_to_string(&mut buf).unwrap();
+        if !buf.contains("[features]") {
+            file.write_all(include_str!("templates/Cargo.toml.feature-patch.template").as_bytes())
+                .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+        }
 
         file.write_all(
             if softdevice.is_some() {
