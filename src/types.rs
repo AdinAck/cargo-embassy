@@ -27,10 +27,10 @@ pub enum Family {
 
 impl Display for Family {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::STM32 => f.write_str("stm32"),
-            Self::NRF => f.write_str("nrf"),
-        }
+        f.write_str(match self {
+            Self::STM32 => "stm32",
+            Self::NRF => "nrf",
+        })
     }
 }
 
@@ -41,6 +41,7 @@ impl TryFrom<&str> for Family {
         let family_raw = chip
             .get(..5)
             .ok_or(Error::InvalidChip(InvalidChip::Unknown))?;
+
         if family_raw.to_lowercase().as_str() == "stm32" {
             Ok(Self::STM32)
         } else if &family_raw[..3] == "nrf" {
@@ -63,13 +64,13 @@ pub enum Target {
 
 impl Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Thumbv6 => f.write_str("thumbv6m-none-eabi"),
-            Self::Thumbv7 => f.write_str("thumbv7m-none-eabi"),
-            Self::Thumbv7e => f.write_str("thumbv7em-none-eabi"),
-            Self::Thumbv7f => f.write_str("thumbv7em-none-eabihf"),
-            Self::Thumbv8 => f.write_str("thumbv8m.main-none-eabihf"),
-        }
+        f.write_str(match self {
+            Self::Thumbv6 => "thumbv6m-none-eabi",
+            Self::Thumbv7 => "thumbv7m-none-eabi",
+            Self::Thumbv7e => "thumbv7em-none-eabi",
+            Self::Thumbv7f => "thumbv7em-none-eabihf",
+            Self::Thumbv8 => "thumbv8m.main-none-eabihf",
+        })
     }
 }
 
