@@ -38,17 +38,13 @@ impl TryFrom<&str> for Family {
     type Error = Error;
 
     fn try_from(chip: &str) -> Result<Self, Self::Error> {
-        let family_raw = chip
-            .get(..5)
-            .ok_or(Error::InvalidChip(InvalidChip::Unknown))?;
+        let chip = chip.to_ascii_lowercase();
+        let families = [("stm32", Self::STM32), ("nrf", Self::NRF)];
 
-        if family_raw.to_lowercase().as_str() == "stm32" {
-            Ok(Self::STM32)
-        } else if &family_raw[..3] == "nrf" {
-            Ok(Self::NRF)
-        } else {
-            Err(Error::InvalidChip(InvalidChip::Unknown))
-        }
+        families
+            .iter()
+            .find_map(|(s, f)| chip.starts_with(s).then(|| f.clone()))
+            .ok_or(Error::InvalidChip(InvalidChip::Unknown))
     }
 }
 
