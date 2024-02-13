@@ -56,8 +56,6 @@ cargo embed
 cargo embassy init my_project --chip stm32g031k8
 ```
 
-That's it! You can `cargo flash` or `cargo run --features=defmt`.
-
 **Create a new Embassy project for the NRF52840:**
 ```sh
 cargo embassy init my_project --chip nrf52840
