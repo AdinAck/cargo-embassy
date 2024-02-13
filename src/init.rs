@@ -36,7 +36,7 @@ impl Init {
 
     fn run_inner(&self, mut args: InitArgs) -> Result<(), Error> {
         // for convenience
-        args.chip_name = args.chip_name.replace("-", "_").to_lowercase();
+        args.chip_name = args.chip_name.replace('-', "_").to_lowercase();
 
         let (chip, probe_target_name) = self.get_target_info(&args.chip_name)?;
 
@@ -75,16 +75,16 @@ impl Init {
             .output()
             .map_err(|_| Error::CreateCargo)?;
 
-        set_current_dir(&name).map_err(|_| Error::ChangeDir)
+        set_current_dir(name).map_err(|_| Error::ChangeDir)
     }
 
     fn get_target_info(&self, name: &str) -> Result<(Chip, String), Error> {
         self.pb.set_message("Searching chips");
-        if let Ok(chips) = search_chips(&name) {
+        if let Ok(chips) = search_chips(name) {
             let probe_target = get_target_by_name(
                 chips
                     .first()
-                    .map_or(Err(Error::InvalidChip(InvalidChip::Unknown)), |t| Ok(t))?,
+                    .ok_or(Error::InvalidChip(InvalidChip::Unknown))?,
             )
             .unwrap();
 
@@ -322,7 +322,7 @@ impl Init {
     ) -> Result<(), Error> {
         self.pb.set_message(format!("Cargo add: {name}"));
 
-        let features = features.unwrap_or(Vec::new()).join(",");
+        let features = features.unwrap_or_default().join(",");
         let mut cmd = Command::new("cargo");
 
         cmd.arg("add")
