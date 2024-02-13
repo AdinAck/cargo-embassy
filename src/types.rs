@@ -77,31 +77,33 @@ impl Display for Target {
 impl TryFrom<&str> for Target {
     type Error = Error;
     fn try_from(chip: &str) -> Result<Self, Self::Error> {
+        use Target::*;
+
         let targets = [
             // STM
-            ("stm32f0", Target::Thumbv6),
-            ("stm32f1", Target::Thumbv7),
-            ("stm32f2", Target::Thumbv7),
-            ("stm32f3", Target::Thumbv7e),
-            ("stm32f4", Target::Thumbv7e),
-            ("stm32f7", Target::Thumbv7e),
-            ("stm32c0", Target::Thumbv6),
-            ("stm32g0", Target::Thumbv6),
-            ("stm32g4", Target::Thumbv7e),
-            ("stm32h5", Target::Thumbv8),
-            ("stm32h7", Target::Thumbv7e),
-            ("stm32l0", Target::Thumbv6),
-            ("stm32l1", Target::Thumbv7),
-            ("stm32l4", Target::Thumbv7e),
-            ("stm32l5", Target::Thumbv8),
-            ("stm32u5", Target::Thumbv8),
-            ("stm32wb", Target::Thumbv7e),
-            ("stm32wba", Target::Thumbv8),
-            ("stm32wl", Target::Thumbv7e),
+            ("stm32f0", Thumbv6),
+            ("stm32f1", Thumbv7),
+            ("stm32f2", Thumbv7),
+            ("stm32f3", Thumbv7e),
+            ("stm32f4", Thumbv7e),
+            ("stm32f7", Thumbv7e),
+            ("stm32c0", Thumbv6),
+            ("stm32g0", Thumbv6),
+            ("stm32g4", Thumbv7e),
+            ("stm32h5", Thumbv8),
+            ("stm32h7", Thumbv7e),
+            ("stm32l0", Thumbv6),
+            ("stm32l1", Thumbv7),
+            ("stm32l4", Thumbv7e),
+            ("stm32l5", Thumbv8),
+            ("stm32u5", Thumbv8),
+            ("stm32wb", Thumbv7e),
+            ("stm32wba", Thumbv8),
+            ("stm32wl", Thumbv7e),
             // nRF
-            ("nrf52", Target::Thumbv7f),
-            ("nrf53", Target::Thumbv8),
-            ("nrf91", Target::Thumbv8),
+            ("nrf52", Thumbv7f),
+            ("nrf53", Thumbv8),
+            ("nrf91", Thumbv8),
         ];
 
         targets
