@@ -37,17 +37,17 @@ You can see how the `init` command works with:
 cargo embassy init --help
 ```
 
-To deploy the project, run:
+To run the project, use:
 ```
-cargo embed <OPTIONS>
-```
-
-...or to run the project with RTT:
-```
-cargo run --features defmt
+cargo run
 ```
 
-> `defmt` is *opt-in* so for RTT the `defmt` feature must be enabled.
+...or to deploy the project without RTT:
+```
+cargo embed
+```
+
+> `defmt` can be removed for production deployments by disabling the "debug" feature with `--no-default-features`.
 
 # Examples
 
