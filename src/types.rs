@@ -1,5 +1,5 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use std::{collections::HashMap, fmt::Display};
+use std::fmt::Display;
 
 #[derive(Debug)]
 pub enum InvalidChip {
@@ -27,10 +27,10 @@ pub enum Family {
 
 impl Display for Family {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::STM32 => f.write_str("stm32"),
-            Self::NRF => f.write_str("nrf"),
-        }
+        f.write_str(match self {
+            Self::STM32 => "stm32",
+            Self::NRF => "nrf",
+        })
     }
 }
 
@@ -38,16 +38,13 @@ impl TryFrom<&str> for Family {
     type Error = Error;
 
     fn try_from(chip: &str) -> Result<Self, Self::Error> {
-        let family_raw = chip
-            .get(..5)
-            .ok_or(Error::InvalidChip(InvalidChip::Unknown))?;
-        if family_raw.to_lowercase().as_str() == "stm32" {
-            Ok(Self::STM32)
-        } else if &family_raw[..3] == "nrf" {
-            Ok(Self::NRF)
-        } else {
-            Err(Error::InvalidChip(InvalidChip::Unknown))
-        }
+        let chip = chip.to_ascii_lowercase();
+        let families = [("stm32", Self::STM32), ("nrf", Self::NRF)];
+
+        families
+            .iter()
+            .find_map(|(s, f)| chip.starts_with(s).then(|| f.clone()))
+            .ok_or(Error::InvalidChip(InvalidChip::Unknown))
     }
 }
 
@@ -63,55 +60,52 @@ pub enum Target {
 
 impl Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Thumbv6 => f.write_str("thumbv6m-none-eabi"),
-            Self::Thumbv7 => f.write_str("thumbv7m-none-eabi"),
-            Self::Thumbv7e => f.write_str("thumbv7em-none-eabi"),
-            Self::Thumbv7f => f.write_str("thumbv7em-none-eabihf"),
-            Self::Thumbv8 => f.write_str("thumbv8m.main-none-eabihf"),
-        }
+        f.write_str(match self {
+            Self::Thumbv6 => "thumbv6m-none-eabi",
+            Self::Thumbv7 => "thumbv7m-none-eabi",
+            Self::Thumbv7e => "thumbv7em-none-eabi",
+            Self::Thumbv7f => "thumbv7em-none-eabihf",
+            Self::Thumbv8 => "thumbv8m.main-none-eabihf",
+        })
     }
 }
 
 impl TryFrom<&str> for Target {
     type Error = Error;
     fn try_from(chip: &str) -> Result<Self, Self::Error> {
-        let mut chip_target_map = HashMap::new();
+        use Target::*;
 
-        // stm
-        chip_target_map.insert("stm32f0", Target::Thumbv6);
-        chip_target_map.insert("stm32f1", Target::Thumbv7);
-        chip_target_map.insert("stm32f2", Target::Thumbv7);
-        chip_target_map.insert("stm32f3", Target::Thumbv7e);
-        chip_target_map.insert("stm32f4", Target::Thumbv7e);
-        chip_target_map.insert("stm32f7", Target::Thumbv7e);
-        chip_target_map.insert("stm32c0", Target::Thumbv6);
-        chip_target_map.insert("stm32g0", Target::Thumbv6);
-        chip_target_map.insert("stm32g4", Target::Thumbv7e);
-        chip_target_map.insert("stm32h5", Target::Thumbv8);
-        chip_target_map.insert("stm32h7", Target::Thumbv7e);
-        chip_target_map.insert("stm32l0", Target::Thumbv6);
-        chip_target_map.insert("stm32l1", Target::Thumbv7);
-        chip_target_map.insert("stm32l4", Target::Thumbv7e);
-        chip_target_map.insert("stm32l5", Target::Thumbv8);
-        chip_target_map.insert("stm32u5", Target::Thumbv8);
-        chip_target_map.insert("stm32wb", Target::Thumbv7e);
-        chip_target_map.insert("stm32wba", Target::Thumbv8);
-        chip_target_map.insert("stm32wl", Target::Thumbv7e);
+        let targets = [
+            // nRF
+            ("nrf52", Thumbv7f),
+            ("nrf53", Thumbv8),
+            ("nrf91", Thumbv8),
+            // STM
+            ("stm32c0", Thumbv6),
+            ("stm32f0", Thumbv6),
+            ("stm32f1", Thumbv7),
+            ("stm32f2", Thumbv7),
+            ("stm32f3", Thumbv7e),
+            ("stm32f4", Thumbv7e),
+            ("stm32f7", Thumbv7e),
+            ("stm32g0", Thumbv6),
+            ("stm32g4", Thumbv7e),
+            ("stm32h5", Thumbv8),
+            ("stm32h7", Thumbv7e),
+            ("stm32l0", Thumbv6),
+            ("stm32l1", Thumbv7),
+            ("stm32l4", Thumbv7e),
+            ("stm32l5", Thumbv8),
+            ("stm32u5", Thumbv8),
+            ("stm32wb", Thumbv7e),
+            ("stm32wba", Thumbv8),
+            ("stm32wl", Thumbv7e),
+        ];
 
-        // nrf
-        chip_target_map.insert("nrf52", Target::Thumbv7f);
-        chip_target_map.insert("nrf53", Target::Thumbv8);
-        chip_target_map.insert("nrf91", Target::Thumbv8);
-
-        // strip the last character until the key exists
-        for i in (1..=chip.len()).rev() {
-            if let Some(target) = chip_target_map.get(&chip[..i]) {
-                return Ok(target.clone());
-            }
-        }
-
-        Err(Error::InvalidChip(InvalidChip::Unknown))
+        targets
+            .iter()
+            .find_map(|(s, t)| chip.starts_with(s).then(|| t.clone()))
+            .ok_or(Error::InvalidChip(InvalidChip::Unknown))
     }
 }
 
