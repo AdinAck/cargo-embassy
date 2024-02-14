@@ -161,6 +161,7 @@ impl FromStr for Chip {
         Ok(Self {
             name: match family {
                 STM32 => chip.to_string(),
+                // FRAGILE: "_" is used to coerce probe-rs chip search
                 NRF(_) => chip.split('_').next().unwrap().to_string(),
             },
             family,
