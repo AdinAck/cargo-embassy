@@ -1,5 +1,5 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 #[derive(Debug)]
 pub enum InvalidChip {
@@ -9,42 +9,27 @@ pub enum InvalidChip {
 
 #[derive(Debug)]
 pub enum Error {
+    CargoAdd(String),
+    ChangeDir,
     CreateCargo,
     CreateFile(String),
-    ChangeDir,
-    InvalidChip(InvalidChip),
-    CargoAdd(String),
     ErroneousSoftdevice,
+    InvalidChip(InvalidChip),
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Clone, PartialEq, ValueEnum)]
-#[value()]
+#[derive(Debug, Clone)]
 pub enum Family {
     STM32,
-    NRF,
+    NRF(MemRegion),
 }
 
 impl Display for Family {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::STM32 => "stm32",
-            Self::NRF => "nrf",
+            Self::NRF(_) => "nrf",
         })
-    }
-}
-
-impl TryFrom<&str> for Family {
-    type Error = Error;
-
-    fn try_from(chip: &str) -> Result<Self, Self::Error> {
-        let chip = chip.to_ascii_lowercase();
-        let families = [("stm32", Self::STM32), ("nrf", Self::NRF)];
-
-        families
-            .iter()
-            .find_map(|(s, f)| chip.starts_with(s).then(|| f.clone()))
-            .ok_or(Error::InvalidChip(InvalidChip::Unknown))
     }
 }
 
@@ -70,46 +55,8 @@ impl Display for Target {
     }
 }
 
-impl TryFrom<&str> for Target {
-    type Error = Error;
-    fn try_from(chip: &str) -> Result<Self, Self::Error> {
-        use Target::*;
-
-        let targets = [
-            // nRF
-            ("nrf52", Thumbv7f),
-            ("nrf53", Thumbv8),
-            ("nrf91", Thumbv8),
-            // STM
-            ("stm32c0", Thumbv6),
-            ("stm32f0", Thumbv6),
-            ("stm32f1", Thumbv7),
-            ("stm32f2", Thumbv7),
-            ("stm32f3", Thumbv7e),
-            ("stm32f4", Thumbv7e),
-            ("stm32f7", Thumbv7e),
-            ("stm32g0", Thumbv6),
-            ("stm32g4", Thumbv7e),
-            ("stm32h5", Thumbv8),
-            ("stm32h7", Thumbv7e),
-            ("stm32l0", Thumbv6),
-            ("stm32l1", Thumbv7),
-            ("stm32l4", Thumbv7e),
-            ("stm32l5", Thumbv8),
-            ("stm32u5", Thumbv8),
-            ("stm32wb", Thumbv7e),
-            ("stm32wba", Thumbv8),
-            ("stm32wl", Thumbv7e),
-        ];
-
-        targets
-            .iter()
-            .find_map(|(s, t)| chip.starts_with(s).then(|| t.clone()))
-            .ok_or(Error::InvalidChip(InvalidChip::Unknown))
-    }
-}
-
-pub(crate) struct NRFMemoryRegion {
+#[derive(Clone, Debug)]
+pub(crate) struct MemRegion {
     pub flash_origin: usize,
     pub flash_length: usize,
 
@@ -117,7 +64,7 @@ pub(crate) struct NRFMemoryRegion {
     pub ram_length: usize,
 }
 
-impl NRFMemoryRegion {
+impl MemRegion {
     const NRF52805: Self = Self {
         flash_origin: 0,
         flash_length: 192,
@@ -157,53 +104,68 @@ impl NRFMemoryRegion {
     };
 }
 
-impl TryFrom<&str> for NRFMemoryRegion {
-    type Error = Error;
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "nrf52805" => Ok(Self::NRF52805),
-            "nrf52810" => Ok(Self::NRF52810),
-            "nrf52811" => Ok(Self::NRF52811),
-            "nrf52820" => Ok(Self::NRF52820),
-            "nrf52832" => Err(Error::InvalidChip(InvalidChip::Ambiguous)),
-            "nrf52832_xxaa" => Ok(Self::NRF52832_XXAA),
-            "nrf52832_xxab" => Ok(Self::NRF52832_XXAB),
-            "nrf52833" => Ok(Self::NRF52833),
-            "nrf52840" => Ok(Self::NRF52840),
-            // TODO: nrf53x and nrf91x
-            _ => Err(Error::InvalidChip(InvalidChip::Unknown)),
-        }
-    }
-}
-
 pub(crate) struct Chip {
     pub family: Family,
     pub target: Target,
     pub name: String,
-    pub memory: Option<NRFMemoryRegion>,
 }
 
-impl TryFrom<&str> for Chip {
-    type Error = Error;
+impl FromStr for Chip {
+    type Err = Error;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let family = Family::try_from(value)?;
-        let target = Target::try_from(value)?;
+    fn from_str(chip: &str) -> Result<Self, Self::Err> {
+        use Family::*;
+        use Target::*;
 
-        Ok(match family {
-            Family::STM32 => Self {
-                family,
-                target,
-                name: value.into(),
-                memory: None,
-            },
-            Family::NRF => Self {
-                family,
-                target,
+        let chips = [
+            // nRF
+            ("nrf52805", (NRF(MemRegion::NRF52805), Thumbv7f)),
+            ("nrf52810", (NRF(MemRegion::NRF52810), Thumbv7f)),
+            ("nrf52811", (NRF(MemRegion::NRF52811), Thumbv7f)),
+            ("nrf52820", (NRF(MemRegion::NRF52820), Thumbv7f)),
+            ("nrf52832_xxaa", (NRF(MemRegion::NRF52832_XXAA), Thumbv7f)),
+            ("nrf52832_xxab", (NRF(MemRegion::NRF52832_XXAB), Thumbv7f)),
+            ("nrf52833", (NRF(MemRegion::NRF52833), Thumbv7f)),
+            ("nrf52840", (NRF(MemRegion::NRF52840), Thumbv7f)),
+            // TODO: nrf53x and nrf91x
+            // STM
+            ("stm32c0", (STM32, Thumbv6)),
+            ("stm32f0", (STM32, Thumbv6)),
+            ("stm32f1", (STM32, Thumbv7)),
+            ("stm32f2", (STM32, Thumbv7)),
+            ("stm32f3", (STM32, Thumbv7e)),
+            ("stm32f4", (STM32, Thumbv7e)),
+            ("stm32f7", (STM32, Thumbv7e)),
+            ("stm32g0", (STM32, Thumbv6)),
+            ("stm32g4", (STM32, Thumbv7e)),
+            ("stm32h5", (STM32, Thumbv8)),
+            ("stm32h7", (STM32, Thumbv7e)),
+            ("stm32l0", (STM32, Thumbv6)),
+            ("stm32l1", (STM32, Thumbv7)),
+            ("stm32l4", (STM32, Thumbv7e)),
+            ("stm32l5", (STM32, Thumbv8)),
+            ("stm32u5", (STM32, Thumbv8)),
+            ("stm32wb", (STM32, Thumbv7e)),
+            ("stm32wba", (STM32, Thumbv8)),
+            ("stm32wl", (STM32, Thumbv7e)),
+        ];
+
+        let (family, target) = chips
+            .iter()
+            .find_map(|(s, (f, t))| chip.starts_with(s).then(|| (f.clone(), t.clone())))
+            .ok_or(match chip {
+                "nrf52832" => Error::InvalidChip(InvalidChip::Ambiguous),
+                _ => Error::InvalidChip(InvalidChip::Unknown),
+            })?;
+
+        Ok(Self {
+            name: match family {
+                STM32 => chip.to_string(),
                 // FRAGILE: "_" is used to coerce probe-rs chip search
-                name: value.split('_').next().unwrap().into(),
-                memory: Some(NRFMemoryRegion::try_from(value)?),
+                NRF(_) => chip.split('_').next().unwrap().to_string(),
             },
+            family,
+            target,
         })
     }
 }
