@@ -9,7 +9,9 @@ use std::{
 use indicatif::ProgressBar;
 use probe_rs::config::{get_target_by_name, search_chips};
 
-use crate::types::{Chip, Error, Family, InitArgs, InvalidChip, PanicHandler, Softdevice, Target};
+use crate::types::{
+    Chip, Error, Family, InitArgs, InvalidChip, MemRegion, PanicHandler, Softdevice, Target,
+};
 
 pub struct Init {
     pb: ProgressBar,
@@ -41,7 +43,7 @@ impl Init {
         let (chip, probe_target_name) = self.get_target_info(&args.chip_name)?;
 
         // validate softdevice <--> nrf
-        if args.softdevice.is_some() && chip.family != Family::NRF {
+        if args.softdevice.is_some() && !matches!(chip.family, Family::NRF(_)) {
             return Err(Error::ErroneousSoftdevice);
         }
 
@@ -60,8 +62,8 @@ impl Init {
         self.init_fmt()?;
         self.init_main(&chip.family, &args.panic_handler, args.softdevice.as_ref())?;
 
-        if let Family::NRF = chip.family {
-            self.init_memory_x(&chip)?;
+        if let Family::NRF(mem_reg) = chip.family {
+            self.init_memory_x(mem_reg)?;
             self.pb.println("[ACTION NEEDED] You must now flash the Softdevice and configure memory.x. Instructions can be found here: https://github.com/embassy-rs/nrf-softdevice#running-examples.");
         }
 
@@ -130,7 +132,7 @@ impl Init {
                 "build.rs",
                 include_str!("templates/build.rs.stm32.template"),
             ),
-            Family::NRF => {
+            Family::NRF(_) => {
                 self.create_file("build.rs", include_str!("templates/build.rs.nrf.template"))
             }
         }
@@ -174,7 +176,7 @@ impl Init {
                 ]),
                 false,
             ),
-            Family::NRF => self.cargo_add(
+            Family::NRF(_) => self.cargo_add(
                 "embassy-nrf",
                 Some(vec![chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
                 false,
@@ -260,7 +262,7 @@ impl Init {
                     panic_handler = inflector::cases::snakecase::to_snake_case(panic_handler.str())
                 ),
             ),
-            Family::NRF => self.create_file(
+            Family::NRF(_) => self.create_file(
                 "src/main.rs",
                 &if softdevice.is_some() {
                     format!(
@@ -279,23 +281,17 @@ impl Init {
         }
     }
 
-    fn init_memory_x(&self, chip: &Chip) -> Result<(), Error> {
-        if let Some(memory) = &chip.memory {
-            self.create_file(
-                "memory.x",
-                &format!(
-                    include_str!("templates/memory.x.template"),
-                    flash_origin = memory.flash_origin,
-                    flash_len = memory.flash_length,
-                    ram_origin = memory.ram_origin,
-                    ram_len = memory.ram_length,
-                ),
-            )?;
-        } else {
-            unreachable!("NRF chip *must* have memory region specified.");
-        }
-
-        Ok(())
+    fn init_memory_x(&self, memory: MemRegion) -> Result<(), Error> {
+        self.create_file(
+            "memory.x",
+            &format!(
+                include_str!("templates/memory.x.template"),
+                flash_origin = memory.flash_origin,
+                flash_len = memory.flash_length,
+                ram_origin = memory.ram_origin,
+                ram_len = memory.ram_length,
+            ),
+        )
     }
 
     fn create_file(&self, name: &str, content: &str) -> Result<(), Error> {
