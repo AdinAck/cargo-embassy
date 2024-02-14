@@ -9,12 +9,12 @@ pub enum InvalidChip {
 
 #[derive(Debug)]
 pub enum Error {
+    CargoAdd(String),
+    ChangeDir,
     CreateCargo,
     CreateFile(String),
-    ChangeDir,
-    InvalidChip(InvalidChip),
-    CargoAdd(String),
     ErroneousSoftdevice,
+    InvalidChip(InvalidChip),
 }
 
 #[allow(clippy::upper_case_acronyms)]
