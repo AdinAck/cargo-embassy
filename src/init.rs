@@ -90,7 +90,7 @@ impl Init {
             )
             .unwrap();
 
-            Ok((Chip::try_from(name)?, probe_target.name))
+            Ok((name.parse()?, probe_target.name))
         } else {
             Err(Error::InvalidChip(InvalidChip::Unknown))
         }

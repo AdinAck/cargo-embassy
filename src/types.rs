@@ -1,5 +1,5 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 #[derive(Debug)]
 pub enum InvalidChip {
@@ -110,10 +110,10 @@ pub(crate) struct Chip {
     pub name: String,
 }
 
-impl TryFrom<String> for Chip {
-    type Error = Error;
+impl FromStr for Chip {
+    type Err = Error;
 
-    fn try_from(chip: String) -> Result<Self, Self::Error> {
+    fn from_str(chip: &str) -> Result<Self, Self::Err> {
         use Family::*;
         use Target::*;
 
@@ -153,15 +153,15 @@ impl TryFrom<String> for Chip {
         let (family, target) = chips
             .iter()
             .find_map(|(s, (f, t))| chip.starts_with(s).then(|| (f.clone(), t.clone())))
-            .ok_or(match chip.as_str() {
+            .ok_or(match chip {
                 "nrf52832" => Error::InvalidChip(InvalidChip::Ambiguous),
                 _ => Error::InvalidChip(InvalidChip::Unknown),
             })?;
 
         Ok(Self {
             name: match family {
-                STM32 => chip,
-                NRF(_) => chip.split('_').next().unwrap().into(),
+                STM32 => chip.to_string(),
+                NRF(_) => chip.split('_').next().unwrap().to_string(),
             },
             family,
             target,
