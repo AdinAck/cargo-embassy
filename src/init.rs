@@ -17,9 +17,7 @@ use crate::types::{
         Chip,
     },
     error::{Error, InvalidChip},
-    panic_handler::PanicHandler,
-    soft_device::Softdevice,
-    InitArgs,
+    init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
 };
 
 pub struct Init {
