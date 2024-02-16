@@ -1,24 +1,9 @@
+pub mod error;
 pub mod family;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use error::{Error, InvalidChip};
 use std::{fmt::Display, str::FromStr};
-
-#[derive(Debug)]
-pub enum InvalidChip {
-    Unknown,
-    Ambiguous,
-}
-
-#[derive(Debug)]
-pub enum Error {
-    CargoAdd(String),
-    ChangeDir,
-    CreateCargo,
-    CreateFile(&'static str),
-    CreateFolder(&'static str),
-    ErroneousSoftdevice,
-    InvalidChip(InvalidChip),
-}
 
 #[derive(Debug, Clone, ValueEnum)]
 #[value()]
