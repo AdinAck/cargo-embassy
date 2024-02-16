@@ -96,7 +96,7 @@ impl Init {
     }
 
     fn init_config(&self, target: &Target, chip: &str) -> Result<(), Error> {
-        fs::create_dir_all(".cargo").map_err(|_| Error::CreateFile(".cargo/config.toml".into()))?;
+        fs::create_dir_all(".cargo").map_err(|_| Error::CreateFolder(".cargo"))?;
 
         self.create_file(
             ".cargo/config.toml",

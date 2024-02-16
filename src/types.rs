@@ -13,6 +13,7 @@ pub enum Error {
     ChangeDir,
     CreateCargo,
     CreateFile(&'static str),
+    CreateFolder(&'static str),
     ErroneousSoftdevice,
     InvalidChip(InvalidChip),
 }
