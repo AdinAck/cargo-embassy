@@ -7,6 +7,7 @@ use std::{
 };
 
 use indicatif::ProgressBar;
+use inflector::cases::snakecase::to_snake_case;
 use probe_rs::config::{get_target_by_name, search_chips};
 
 use crate::types::{
@@ -246,31 +247,29 @@ impl Init {
         panic_handler: &PanicHandler,
         softdevice: Option<&Softdevice>,
     ) -> Result<(), Error> {
-        match family {
-            Family::STM32 => self.create_file(
-                "src/main.rs",
-                &format!(
+        let panic_handler = to_snake_case(panic_handler.str());
+
+        self.create_file(
+            "src/main.rs",
+            &match (family, softdevice) {
+                (Family::STM32, _) => format!(
                     include_str!("templates/main.rs.stm32.template"),
-                    panic_handler = inflector::cases::snakecase::to_snake_case(panic_handler.str())
+                    panic_handler = panic_handler
                 ),
-            ),
-            Family::NRF(_) => self.create_file(
-                "src/main.rs",
-                &if softdevice.is_some() {
+                (Family::NRF(_), Some(_)) => {
                     format!(
                         include_str!("templates/main.rs.nrf.sd.template"),
-                        panic_handler =
-                            inflector::cases::snakecase::to_snake_case(panic_handler.str())
+                        panic_handler = panic_handler
                     )
-                } else {
+                }
+                (Family::NRF(_), None) => {
                     format!(
                         include_str!("templates/main.rs.nrf.template"),
-                        panic_handler =
-                            inflector::cases::snakecase::to_snake_case(panic_handler.str())
+                        panic_handler = panic_handler
                     )
-                },
-            ),
-        }
+                }
+            },
+        )
     }
 
     fn init_memory_x(&self, memory: MemRegion) -> Result<(), Error> {
