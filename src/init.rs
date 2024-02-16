@@ -28,7 +28,7 @@ impl Init {
     pub fn run(&self, args: InitArgs) {
         if let Err(e) = self.run_inner(args) {
             self.pb
-                .abandon_with_message(format!("Failed with error: {:#?}.", e))
+                .abandon_with_message(format!("Failed with error: {e:#?}."))
         } else {
             self.pb
                 .finish_with_message(format!("Finished in {}s", self.pb.elapsed().as_secs()))
