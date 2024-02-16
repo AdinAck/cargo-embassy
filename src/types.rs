@@ -1,24 +1,9 @@
 pub mod chip;
 pub mod error;
+pub mod panic_handler;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
-
-#[derive(Debug, Clone, Default, ValueEnum)]
-#[value()]
-pub enum PanicHandler {
-    #[default]
-    Halt,
-    Reset,
-}
-
-impl PanicHandler {
-    pub(crate) fn str(&self) -> &str {
-        match self {
-            Self::Halt => "panic-halt",
-            Self::Reset => "panic-reset",
-        }
-    }
-}
+use panic_handler::PanicHandler;
 
 #[derive(Debug, Clone, ValueEnum)]
 #[value()]
