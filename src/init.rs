@@ -126,15 +126,12 @@ impl Init {
     }
 
     fn init_build(&self, family: &Family) -> Result<(), Error> {
-        match family {
-            Family::STM32 => self.create_file(
-                "build.rs",
-                include_str!("templates/build.rs.stm32.template"),
-            ),
-            Family::NRF(_) => {
-                self.create_file("build.rs", include_str!("templates/build.rs.nrf.template"))
-            }
-        }
+        let template = match family {
+            Family::STM32 => include_str!("templates/build.rs.stm32.template"),
+            Family::NRF(_) => include_str!("templates/build.rs.nrf.template"),
+        };
+
+        self.create_file("build.rs", template)
     }
 
     fn init_manifest(
