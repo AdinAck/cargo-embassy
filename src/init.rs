@@ -46,7 +46,7 @@ impl Init {
             return Err(Error::ErroneousSoftdevice);
         }
 
-        self.create_proj(&args.name)?;
+        self.create_project(&args.name)?;
 
         self.init_config(&chip.target, &probe_target_name)?;
         self.init_toolchain(&chip.target)?;
@@ -69,7 +69,7 @@ impl Init {
         Ok(())
     }
 
-    fn create_proj(&self, name: &str) -> Result<(), Error> {
+    fn create_project(&self, name: &str) -> Result<(), Error> {
         self.pb.set_message("Create cargo project");
         Command::new("cargo")
             .args(["new", &name])
