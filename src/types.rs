@@ -12,7 +12,7 @@ pub enum Error {
     CargoAdd(String),
     ChangeDir,
     CreateCargo,
-    CreateFile(String),
+    CreateFile(&'static str),
     ErroneousSoftdevice,
     InvalidChip(InvalidChip),
 }

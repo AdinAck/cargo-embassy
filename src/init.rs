@@ -216,7 +216,7 @@ impl Init {
             .read(true)
             .append(true)
             .open("Cargo.toml")
-            .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+            .map_err(|_| Error::CreateFile("Cargo.toml"))?;
 
         // really gross patch for cargo version discontinuity
         // somewhere between cargo 1.72 and 1.76 the behavior of "cargo add" changed
@@ -224,7 +224,7 @@ impl Init {
         file.read_to_string(&mut buf).unwrap();
         if !buf.contains("[features]") {
             file.write_all(include_str!("templates/Cargo.toml.feature-patch.template").as_bytes())
-                .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+                .map_err(|_| Error::CreateFile("Cargo.toml"))?;
         }
 
         file.write_all(
@@ -238,7 +238,7 @@ impl Init {
             }
             .as_bytes(),
         )
-        .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+        .map_err(|_| Error::CreateFile("Cargo.toml"))?;
 
         Ok(())
     }
@@ -293,7 +293,7 @@ impl Init {
         )
     }
 
-    fn create_file(&self, name: &str, content: &str) -> Result<(), Error> {
+    fn create_file(&self, name: &'static str, content: &str) -> Result<(), Error> {
         self.pb.set_message(format!("Create file: {name}"));
 
         let mut file = fs::OpenOptions::new()
@@ -301,10 +301,10 @@ impl Init {
             .create(true)
             .truncate(true)
             .open(name)
-            .map_err(|_| Error::CreateFile(name.into()))?;
+            .map_err(|_| Error::CreateFile(name))?;
 
         file.write_all(content.as_bytes())
-            .map_err(|_| Error::CreateFile(name.into()))?;
+            .map_err(|_| Error::CreateFile(name))?;
 
         Ok(())
     }
