@@ -26,13 +26,12 @@ impl Init {
     }
 
     pub fn run(&self, args: InitArgs) {
-        match self.run_inner(args) {
-            Ok(_) => self
-                .pb
-                .finish_with_message(format!("Finished in {}s", self.pb.elapsed().as_secs())),
-            Err(e) => self
-                .pb
-                .abandon_with_message(format!("Failed with error: {:#?}.", e)),
+        if let Err(e) = self.run_inner(args) {
+            self.pb
+                .abandon_with_message(format!("Failed with error: {:#?}.", e))
+        } else {
+            self.pb
+                .finish_with_message(format!("Finished in {}s", self.pb.elapsed().as_secs()))
         }
     }
 
