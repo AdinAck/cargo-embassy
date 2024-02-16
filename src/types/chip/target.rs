@@ -1,5 +1,4 @@
 use clap::ValueEnum;
-
 use std::fmt::Display;
 
 #[derive(Debug, Clone, ValueEnum)]

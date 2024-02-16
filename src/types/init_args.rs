@@ -2,7 +2,6 @@ pub mod panic_handler;
 pub mod soft_device;
 
 use clap::Args;
-
 use panic_handler::PanicHandler;
 use soft_device::Softdevice;
 

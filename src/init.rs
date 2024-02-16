@@ -1,15 +1,3 @@
-use std::{
-    env::set_current_dir,
-    fs,
-    io::{Read, Write},
-    process::Command,
-    time::Duration,
-};
-
-use indicatif::ProgressBar;
-use inflector::cases::snakecase::to_snake_case;
-use probe_rs::config::{get_target_by_name, search_chips};
-
 use crate::types::{
     chip::{
         family::{mem_region::MemRegion, Family},
@@ -18,6 +6,16 @@ use crate::types::{
     },
     error::{Error, InvalidChip},
     init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
+};
+use indicatif::ProgressBar;
+use inflector::cases::snakecase::to_snake_case;
+use probe_rs::config::{get_target_by_name, search_chips};
+use std::{
+    env::set_current_dir,
+    fs,
+    io::{Read, Write},
+    process::Command,
+    time::Duration,
 };
 
 pub struct Init {

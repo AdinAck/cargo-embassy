@@ -14,8 +14,7 @@ impl FromStr for Chip {
     type Err = Error;
 
     fn from_str(chip: &str) -> Result<Self, Self::Err> {
-        use family::mem_region::MemRegion;
-        use family::Family::*;
+        use family::{mem_region::MemRegion, Family::*};
         use target::Target::*;
 
         let chips = [
