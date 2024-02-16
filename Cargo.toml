@@ -5,7 +5,7 @@ edition = "2021"
 license-file = "LICENSE"
 description = "Get up and running with Embassy in seconds."
 repository = "https://github.com/AdinAck/cargo-embassy"
-categories = ["no-std", "embedded", "embassy", "cli"]
+categories = ["no-std", "embedded", "command-line-interface"]
 
 [dependencies]
 Inflector = "0.11.4"

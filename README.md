@@ -15,14 +15,6 @@ Get up and running with Embassy in seconds.
 
 Refer to the tracking issues for proposed changes.
 
-# Installation
-
-Simply install this repo as a cargo utility:
-
-```sh
-cargo install --git https://github.com/adinack/cargo-embassy
-```
-
 # Usage
 
 This utility will also create the cargo project, so wherever you would normally run `cargo new ...`, run:
