@@ -14,7 +14,8 @@ use crate::types::{
     error::{Error, InvalidChip},
     family::mem_region::MemRegion,
     family::Family,
-    Chip, InitArgs, PanicHandler, Softdevice, Target,
+    target::Target,
+    Chip, InitArgs, PanicHandler, Softdevice,
 };
 
 pub struct Init {
