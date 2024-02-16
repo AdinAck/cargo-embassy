@@ -3,8 +3,8 @@ pub enum Error {
     CargoAdd(String),
     ChangeDir,
     CreateCargo,
-    CreateFile(&'static str),
-    CreateFolder(&'static str),
+    CreateFile(String),
+    CreateFolder(String),
     ErroneousSoftdevice,
     InvalidChip(InvalidChip),
 }

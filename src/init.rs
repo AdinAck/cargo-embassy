@@ -101,7 +101,7 @@ impl Init {
     }
 
     fn init_config(&self, target: &Target, chip: &str) -> Result<(), Error> {
-        fs::create_dir_all(".cargo").map_err(|_| Error::CreateFolder(".cargo"))?;
+        fs::create_dir_all(".cargo").map_err(|_| Error::CreateFolder(".cargo".into()))?;
 
         self.create_file(
             ".cargo/config.toml",
@@ -214,7 +214,7 @@ impl Init {
             .read(true)
             .append(true)
             .open("Cargo.toml")
-            .map_err(|_| Error::CreateFile("Cargo.toml"))?;
+            .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
 
         // really gross patch for cargo version discontinuity
         // somewhere between cargo 1.72 and 1.76 the behavior of "cargo add" changed
@@ -222,7 +222,7 @@ impl Init {
         file.read_to_string(&mut buf).unwrap();
         if !buf.contains("[features]") {
             file.write_all(include_str!("templates/Cargo.toml.feature-patch.template").as_bytes())
-                .map_err(|_| Error::CreateFile("Cargo.toml"))?;
+                .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
         }
 
         file.write_all(
@@ -236,7 +236,7 @@ impl Init {
             }
             .as_bytes(),
         )
-        .map_err(|_| Error::CreateFile("Cargo.toml"))?;
+        .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
 
         Ok(())
     }
@@ -289,7 +289,7 @@ impl Init {
         )
     }
 
-    fn create_file(&self, name: &'static str, content: &str) -> Result<(), Error> {
+    fn create_file(&self, name: &str, content: &str) -> Result<(), Error> {
         self.pb.set_message(format!("Create file: {name}"));
 
         let mut file = fs::OpenOptions::new()
@@ -297,10 +297,10 @@ impl Init {
             .create(true)
             .truncate(true)
             .open(name)
-            .map_err(|_| Error::CreateFile(name))?;
+            .map_err(|_| Error::CreateFile(name.into()))?;
 
         file.write_all(content.as_bytes())
-            .map_err(|_| Error::CreateFile(name))?;
+            .map_err(|_| Error::CreateFile(name.into()))?;
 
         Ok(())
     }
