@@ -1,11 +1,11 @@
-use crate::types::{
+use crate::{
     chip::{
         family::{mem_region::MemRegion, Family},
         target::Target,
         Chip,
     },
     error::{Error, InvalidChip},
-    init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
+    parser::init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
 };
 use indicatif::ProgressBar;
 use inflector::cases::snakecase::to_snake_case;

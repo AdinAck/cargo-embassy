@@ -1,7 +1,7 @@
 pub mod family;
 pub mod target;
 
-use crate::types::error::{Error, InvalidChip};
+use crate::error::{Error, InvalidChip};
 use std::str::FromStr;
 
 pub(crate) struct Chip {
