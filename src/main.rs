@@ -1,9 +1,11 @@
+pub mod chip;
+pub mod error;
 mod init;
-mod types;
+pub mod parser;
 
 use clap::Parser;
 use init::Init;
-use types::{Cargo, EmbassyCommand};
+use parser::{Cargo, EmbassyCommand};
 
 fn main() {
     let Cargo::Embassy(embassy) = Cargo::parse();

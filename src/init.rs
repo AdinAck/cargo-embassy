@@ -1,16 +1,21 @@
+use crate::{
+    chip::{
+        family::{mem_region::MemRegion, Family},
+        target::Target,
+        Chip,
+    },
+    error::{Error, InvalidChip},
+    parser::init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
+};
+use indicatif::ProgressBar;
+use inflector::cases::snakecase::to_snake_case;
+use probe_rs::config::{get_target_by_name, search_chips};
 use std::{
     env::set_current_dir,
     fs,
     io::{Read, Write},
     process::Command,
     time::Duration,
-};
-
-use indicatif::ProgressBar;
-use probe_rs::config::{get_target_by_name, search_chips};
-
-use crate::types::{
-    Chip, Error, Family, InitArgs, InvalidChip, MemRegion, PanicHandler, Softdevice, Target,
 };
 
 pub struct Init {
@@ -26,13 +31,12 @@ impl Init {
     }
 
     pub fn run(&self, args: InitArgs) {
-        match self.run_inner(args) {
-            Ok(_) => self
-                .pb
-                .finish_with_message(format!("Finished in {}s", self.pb.elapsed().as_secs())),
-            Err(e) => self
-                .pb
-                .abandon_with_message(format!("Failed with error: {:#?}.", e)),
+        if let Err(e) = self.run_inner(args) {
+            self.pb
+                .abandon_with_message(format!("Failed with error: {e:#?}."))
+        } else {
+            self.pb
+                .finish_with_message(format!("Finished in {}s", self.pb.elapsed().as_secs()))
         }
     }
 
@@ -47,7 +51,7 @@ impl Init {
             return Err(Error::ErroneousSoftdevice);
         }
 
-        self.create_proj(&args.name)?;
+        self.create_project(&args.name)?;
 
         self.init_config(&chip.target, &probe_target_name)?;
         self.init_toolchain(&chip.target)?;
@@ -70,7 +74,7 @@ impl Init {
         Ok(())
     }
 
-    fn create_proj(&self, name: &str) -> Result<(), Error> {
+    fn create_project(&self, name: &str) -> Result<(), Error> {
         self.pb.set_message("Create cargo project");
         Command::new("cargo")
             .args(["new", &name])
@@ -97,7 +101,7 @@ impl Init {
     }
 
     fn init_config(&self, target: &Target, chip: &str) -> Result<(), Error> {
-        fs::create_dir_all(".cargo").map_err(|_| Error::CreateFile(".cargo/config.toml".into()))?;
+        fs::create_dir_all(".cargo").map_err(|_| Error::CreateFolder(".cargo".into()))?;
 
         self.create_file(
             ".cargo/config.toml",
@@ -127,15 +131,12 @@ impl Init {
     }
 
     fn init_build(&self, family: &Family) -> Result<(), Error> {
-        match family {
-            Family::STM32 => self.create_file(
-                "build.rs",
-                include_str!("templates/build.rs.stm32.template"),
-            ),
-            Family::NRF(_) => {
-                self.create_file("build.rs", include_str!("templates/build.rs.nrf.template"))
-            }
-        }
+        let template = match family {
+            Family::STM32 => include_str!("templates/build.rs.stm32.template"),
+            Family::NRF(_) => include_str!("templates/build.rs.nrf.template"),
+        };
+
+        self.create_file("build.rs", template)
     }
 
     fn init_manifest(
@@ -153,21 +154,17 @@ impl Init {
         // NOTE: should be threaded proably
         self.cargo_add(
             "embassy-executor",
-            Some(vec![
-                "arch-cortex-m",
-                "executor-thread",
-                "integrated-timers",
-            ]),
+            Some(&["arch-cortex-m", "executor-thread", "integrated-timers"]),
             false,
         )?;
         self.cargo_add("embassy-sync", None, false)?;
         self.cargo_add("embassy-futures", None, false)?;
-        self.cargo_add("embassy-time", Some(vec!["tick-hz-32_768"]), false)?;
+        self.cargo_add("embassy-time", Some(&["tick-hz-32_768"]), false)?;
 
         match chip.family {
             Family::STM32 => self.cargo_add(
                 "embassy-stm32",
-                Some(vec![
+                Some(&[
                     "memory-x",
                     chip.name.as_str(),
                     "time-driver-any",
@@ -178,7 +175,7 @@ impl Init {
             ),
             Family::NRF(_) => self.cargo_add(
                 "embassy-nrf",
-                Some(vec![chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
+                Some(&[chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
                 false,
             ),
         }?;
@@ -186,7 +183,7 @@ impl Init {
         if let Some(softdevice) = softdevice {
             self.cargo_add(
                 "nrf-softdevice",
-                Some(vec![
+                Some(&[
                     chip.name.as_str(),
                     softdevice.str(),
                     "ble-peripheral",
@@ -201,16 +198,16 @@ impl Init {
         self.cargo_add(
             "cortex-m",
             Some(if softdevice.is_some() {
-                vec!["inline-asm"]
+                &["inline-asm"]
             } else {
-                vec!["inline-asm", "critical-section-single-core"]
+                &["inline-asm", "critical-section-single-core"]
             }),
             false,
         )?;
         self.cargo_add("cortex-m-rt", None, false)?;
         self.cargo_add("defmt", None, true)?;
         self.cargo_add("defmt-rtt", None, true)?;
-        self.cargo_add("panic-probe", Some(vec!["print-defmt"]), true)?;
+        self.cargo_add("panic-probe", Some(&["print-defmt"]), true)?;
         self.cargo_add(panic_handler.str(), None, false)?;
 
         let mut file = fs::OpenOptions::new()
@@ -254,31 +251,29 @@ impl Init {
         panic_handler: &PanicHandler,
         softdevice: Option<&Softdevice>,
     ) -> Result<(), Error> {
-        match family {
-            Family::STM32 => self.create_file(
-                "src/main.rs",
-                &format!(
+        let panic_handler = to_snake_case(panic_handler.str());
+
+        self.create_file(
+            "src/main.rs",
+            &match (family, softdevice) {
+                (Family::STM32, _) => format!(
                     include_str!("templates/main.rs.stm32.template"),
-                    panic_handler = inflector::cases::snakecase::to_snake_case(panic_handler.str())
+                    panic_handler = panic_handler
                 ),
-            ),
-            Family::NRF(_) => self.create_file(
-                "src/main.rs",
-                &if softdevice.is_some() {
+                (Family::NRF(_), Some(_)) => {
                     format!(
                         include_str!("templates/main.rs.nrf.sd.template"),
-                        panic_handler =
-                            inflector::cases::snakecase::to_snake_case(panic_handler.str())
+                        panic_handler = panic_handler
                     )
-                } else {
+                }
+                (Family::NRF(_), None) => {
                     format!(
                         include_str!("templates/main.rs.nrf.template"),
-                        panic_handler =
-                            inflector::cases::snakecase::to_snake_case(panic_handler.str())
+                        panic_handler = panic_handler
                     )
-                },
-            ),
-        }
+                }
+            },
+        )
     }
 
     fn init_memory_x(&self, memory: MemRegion) -> Result<(), Error> {
@@ -313,7 +308,7 @@ impl Init {
     fn cargo_add(
         &self,
         name: &str,
-        features: Option<Vec<&str>>,
+        features: Option<&[&str]>,
         optional: bool,
     ) -> Result<(), Error> {
         self.pb.set_message(format!("Cargo add: {name}"));
