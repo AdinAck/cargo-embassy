@@ -1,31 +1,11 @@
 pub mod chip;
 pub mod error;
 pub mod panic_handler;
+pub mod soft_device;
 
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{Args, Parser, Subcommand};
 use panic_handler::PanicHandler;
-
-#[derive(Debug, Clone, ValueEnum)]
-#[value()]
-pub enum Softdevice {
-    S112,
-    S113,
-    S122,
-    S132,
-    S140,
-}
-
-impl Softdevice {
-    pub(crate) fn str(&self) -> &str {
-        match self {
-            Self::S112 => "s112",
-            Self::S113 => "s113",
-            Self::S122 => "s122",
-            Self::S132 => "s132",
-            Self::S140 => "s140",
-        }
-    }
-}
+use soft_device::Softdevice;
 
 #[derive(Parser)]
 #[command(name = "cargo")]
