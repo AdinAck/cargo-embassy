@@ -149,21 +149,17 @@ impl Init {
         // NOTE: should be threaded proably
         self.cargo_add(
             "embassy-executor",
-            Some(vec![
-                "arch-cortex-m",
-                "executor-thread",
-                "integrated-timers",
-            ]),
+            Some(&["arch-cortex-m", "executor-thread", "integrated-timers"]),
             false,
         )?;
         self.cargo_add("embassy-sync", None, false)?;
         self.cargo_add("embassy-futures", None, false)?;
-        self.cargo_add("embassy-time", Some(vec!["tick-hz-32_768"]), false)?;
+        self.cargo_add("embassy-time", Some(&["tick-hz-32_768"]), false)?;
 
         match chip.family {
             Family::STM32 => self.cargo_add(
                 "embassy-stm32",
-                Some(vec![
+                Some(&[
                     "memory-x",
                     chip.name.as_str(),
                     "time-driver-any",
@@ -174,7 +170,7 @@ impl Init {
             ),
             Family::NRF(_) => self.cargo_add(
                 "embassy-nrf",
-                Some(vec![chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
+                Some(&[chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
                 false,
             ),
         }?;
@@ -182,7 +178,7 @@ impl Init {
         if let Some(softdevice) = softdevice {
             self.cargo_add(
                 "nrf-softdevice",
-                Some(vec![
+                Some(&[
                     chip.name.as_str(),
                     softdevice.str(),
                     "ble-peripheral",
@@ -197,16 +193,16 @@ impl Init {
         self.cargo_add(
             "cortex-m",
             Some(if softdevice.is_some() {
-                vec!["inline-asm"]
+                &["inline-asm"]
             } else {
-                vec!["inline-asm", "critical-section-single-core"]
+                &["inline-asm", "critical-section-single-core"]
             }),
             false,
         )?;
         self.cargo_add("cortex-m-rt", None, false)?;
         self.cargo_add("defmt", None, true)?;
         self.cargo_add("defmt-rtt", None, true)?;
-        self.cargo_add("panic-probe", Some(vec!["print-defmt"]), true)?;
+        self.cargo_add("panic-probe", Some(&["print-defmt"]), true)?;
         self.cargo_add(panic_handler.str(), None, false)?;
 
         let mut file = fs::OpenOptions::new()
@@ -309,7 +305,7 @@ impl Init {
     fn cargo_add(
         &self,
         name: &str,
-        features: Option<Vec<&str>>,
+        features: Option<&[&str]>,
         optional: bool,
     ) -> Result<(), Error> {
         self.pb.set_message(format!("Cargo add: {name}"));
