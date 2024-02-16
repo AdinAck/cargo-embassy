@@ -11,7 +11,8 @@ use inflector::cases::snakecase::to_snake_case;
 use probe_rs::config::{get_target_by_name, search_chips};
 
 use crate::types::{
-    Chip, Error, Family, InitArgs, InvalidChip, MemRegion, PanicHandler, Softdevice, Target,
+    mem_region::MemRegion, Chip, Error, Family, InitArgs, InvalidChip, PanicHandler, Softdevice,
+    Target,
 };
 
 pub struct Init {

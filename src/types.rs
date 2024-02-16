@@ -1,3 +1,5 @@
+pub mod mem_region;
+
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::{fmt::Display, str::FromStr};
 
@@ -22,7 +24,7 @@ pub enum Error {
 #[derive(Debug, Clone)]
 pub enum Family {
     STM32,
-    NRF(MemRegion),
+    NRF(mem_region::MemRegion),
 }
 
 impl Display for Family {
@@ -56,55 +58,6 @@ impl Display for Target {
     }
 }
 
-#[derive(Clone, Debug)]
-pub(crate) struct MemRegion {
-    pub flash_origin: usize,
-    pub flash_length: usize,
-
-    pub ram_origin: usize,
-    pub ram_length: usize,
-}
-
-impl MemRegion {
-    const NRF52805: Self = Self {
-        flash_origin: 0,
-        flash_length: 192,
-        ram_origin: 0x2 << 28,
-        ram_length: 24,
-    };
-    const NRF52810: Self = Self::NRF52805;
-    const NRF52811: Self = Self::NRF52805;
-
-    const NRF52820: Self = Self {
-        flash_origin: 0,
-        flash_length: 256,
-        ram_origin: 0x2 << 28,
-        ram_length: 32,
-    };
-
-    const NRF52832_XXAA: Self = Self {
-        flash_origin: 0,
-        flash_length: 512,
-        ram_origin: 0x2 << 28,
-        ram_length: 64,
-    };
-    const NRF52832_XXAB: Self = Self::NRF52820;
-
-    const NRF52833: Self = Self {
-        flash_origin: 0,
-        flash_length: 512,
-        ram_origin: 0x2 << 28,
-        ram_length: 128,
-    };
-
-    const NRF52840: Self = Self {
-        flash_origin: 0,
-        flash_length: 1024,
-        ram_origin: 0x2 << 28,
-        ram_length: 256,
-    };
-}
-
 pub(crate) struct Chip {
     pub family: Family,
     pub target: Target,
@@ -120,14 +73,20 @@ impl FromStr for Chip {
 
         let chips = [
             // nRF
-            ("nrf52805", (NRF(MemRegion::NRF52805), Thumbv7f)),
-            ("nrf52810", (NRF(MemRegion::NRF52810), Thumbv7f)),
-            ("nrf52811", (NRF(MemRegion::NRF52811), Thumbv7f)),
-            ("nrf52820", (NRF(MemRegion::NRF52820), Thumbv7f)),
-            ("nrf52832_xxaa", (NRF(MemRegion::NRF52832_XXAA), Thumbv7f)),
-            ("nrf52832_xxab", (NRF(MemRegion::NRF52832_XXAB), Thumbv7f)),
-            ("nrf52833", (NRF(MemRegion::NRF52833), Thumbv7f)),
-            ("nrf52840", (NRF(MemRegion::NRF52840), Thumbv7f)),
+            ("nrf52805", (NRF(mem_region::MemRegion::NRF52805), Thumbv7f)),
+            ("nrf52810", (NRF(mem_region::MemRegion::NRF52810), Thumbv7f)),
+            ("nrf52811", (NRF(mem_region::MemRegion::NRF52811), Thumbv7f)),
+            ("nrf52820", (NRF(mem_region::MemRegion::NRF52820), Thumbv7f)),
+            (
+                "nrf52832_xxaa",
+                (NRF(mem_region::MemRegion::NRF52832_XXAA), Thumbv7f),
+            ),
+            (
+                "nrf52832_xxab",
+                (NRF(mem_region::MemRegion::NRF52832_XXAB), Thumbv7f),
+            ),
+            ("nrf52833", (NRF(mem_region::MemRegion::NRF52833), Thumbv7f)),
+            ("nrf52840", (NRF(mem_region::MemRegion::NRF52840), Thumbv7f)),
             // TODO: nrf53x and nrf91x
             // STM
             ("stm32c0", (STM32, Thumbv6)),
