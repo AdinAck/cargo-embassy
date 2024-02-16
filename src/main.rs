@@ -3,7 +3,7 @@ mod types;
 
 use clap::Parser;
 use init::Init;
-use types::{Cargo, EmbassyCommand};
+use types::parser::{Cargo, EmbassyCommand};
 
 fn main() {
     let Cargo::Embassy(embassy) = Cargo::parse();
