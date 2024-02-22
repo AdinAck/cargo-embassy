@@ -4,8 +4,8 @@ use crate::{
         target::Target,
         Chip,
     },
+    cli::init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
     error::{Error, InvalidChip},
-    parser::init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
 };
 use indicatif::ProgressBar;
 use inflector::cases::snakecase::to_snake_case;

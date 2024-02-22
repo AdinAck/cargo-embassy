@@ -13,3 +13,4 @@ clap = { version = "4.4.11", features = ["derive"] }
 indicatif = "0.17.7"
 open = "5.0.1"
 probe-rs = "0.21.1"
+termimad = "0.29.1"
