@@ -1,7 +1,7 @@
 # This file was automatically generated.
 
 [toolchain]
-channel = "1.75"
+channel = "1.77"
 components = [ "rust-src", "rustfmt" ]
 targets = [
     "{target}"
