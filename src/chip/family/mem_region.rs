@@ -45,4 +45,11 @@ impl MemRegion {
         ram_origin: 0x2 << 28,
         ram_length: 256,
     };
+
+    pub const RP2040: Self = Self {
+        flash_origin: 0x10000100,
+        flash_length: 2048,
+        ram_origin: 0x2 << 28,
+        ram_length: 256
+    };
 }

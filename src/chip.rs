@@ -48,6 +48,8 @@ impl FromStr for Chip {
             ("stm32wb", (STM32, Thumbv7e)),
             ("stm32wba", (STM32, Thumbv8)),
             ("stm32wl", (STM32, Thumbv7e)),
+            // RP2040
+            ("rp2040", (RP2040, Thumbv6)),
         ];
 
         let (family, target) = chips
@@ -63,6 +65,7 @@ impl FromStr for Chip {
                 STM32 => chip.to_string(),
                 // FRAGILE: "_" is used to coerce probe-rs chip search
                 NRF(_) => chip.split('_').next().unwrap().to_string(),
+                RP2040 => chip.to_string(),
             },
             family,
             target,
