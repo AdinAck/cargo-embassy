@@ -3,7 +3,7 @@
 Get up and running with Embassy in seconds.
 
 # Features
-- Supports STM32* and NRF*
+- Supports STM32*, NRF*, and RP*
 - Generates project structure
   - Toolchain
   - Probing
@@ -56,4 +56,9 @@ cargo embassy init my_project --chip nrf52840
 **Create a new Embassy project for the NRF52832_xxAA and Softdevice S132**
 ```sh
 cargo embassy init my_project --chip nrf52832_xxAA --softdevice s132
+```
+
+**Create a new Embassy project for the RP Pico**
+```sh
+cargo embassy init my_project --chip rp2040
 ```

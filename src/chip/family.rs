@@ -8,6 +8,7 @@ use std::fmt::Display;
 pub enum Family {
     STM32,
     NRF(MemRegion),
+    RP2040,
 }
 
 impl Display for Family {
@@ -15,6 +16,7 @@ impl Display for Family {
         f.write_str(match self {
             Self::STM32 => "stm32",
             Self::NRF(_) => "nrf",
+            Self::RP2040 => "rp",
         })
     }
 }

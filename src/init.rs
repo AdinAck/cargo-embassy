@@ -1,9 +1,5 @@
 use crate::{
-    chip::{
-        family::{mem_region::MemRegion, Family},
-        target::Target,
-        Chip,
-    },
+    chip::{family::Family, target::Target, Chip},
     cli::init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
     error::{Error, InvalidChip},
 };
@@ -65,9 +61,9 @@ impl Init {
         )?;
         self.init_fmt()?;
         self.init_main(&chip.family, &args.panic_handler, args.softdevice.as_ref())?;
+        self.init_memory_x(&chip.family)?;
 
-        if let Family::NRF(mem_reg) = chip.family {
-            self.init_memory_x(mem_reg)?;
+        if args.softdevice.is_some() {
             self.pb.println("[ACTION NEEDED] You must now flash the Softdevice and configure memory.x. Instructions can be found here: https://github.com/embassy-rs/nrf-softdevice#running-examples.");
         }
 
@@ -134,6 +130,7 @@ impl Init {
         let template = match family {
             Family::STM32 => include_str!("templates/build.rs.stm32.template"),
             Family::NRF(_) => include_str!("templates/build.rs.nrf.template"),
+            Family::RP2040 => include_str!("templates/build.rs.rp.template"),
         };
 
         self.create_file("build.rs", template)
@@ -159,7 +156,15 @@ impl Init {
         )?;
         self.cargo_add("embassy-sync", None, false)?;
         self.cargo_add("embassy-futures", None, false)?;
-        self.cargo_add("embassy-time", Some(&["tick-hz-32_768"]), false)?;
+
+        self.cargo_add(
+            "embassy-time",
+            match chip.family {
+                Family::RP2040 => None,
+                _ => Some(&["tick-hz-32_768"]),
+            },
+            false,
+        )?;
 
         match chip.family {
             Family::STM32 => self.cargo_add(
@@ -178,6 +183,17 @@ impl Init {
                 Some(&[chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
                 false,
             ),
+            Family::RP2040 => {
+                self.cargo_add(
+                    "embassy-rp",
+                    Some(&["unstable-pac", "time-driver", "critical-section-impl"]),
+                    false,
+                )?;
+
+                self.cargo_add("embassy-embedded-hal", None, false)?;
+
+                Ok(())
+            }
         }?;
 
         if let Some(softdevice) = softdevice {
@@ -195,15 +211,21 @@ impl Init {
             self.cargo_add(&format!("nrf-softdevice-{}", softdevice.str()), None, false)?;
         }
 
-        self.cargo_add(
-            "cortex-m",
-            Some(if softdevice.is_some() {
-                &["inline-asm"]
-            } else {
-                &["inline-asm", "critical-section-single-core"]
-            }),
-            false,
-        )?;
+        match chip.family {
+            Family::RP2040 => self.cargo_add("cortex-m", Some(&["inline-asm"]), false)?,
+            _ => {
+                self.cargo_add(
+                    "cortex-m",
+                    Some(if softdevice.is_some() {
+                        &["inline-asm"]
+                    } else {
+                        &["inline-asm", "critical-section-single-core"]
+                    }),
+                    false,
+                )?;
+            }
+        }
+
         self.cargo_add("cortex-m-rt", None, false)?;
         self.cargo_add("defmt", None, true)?;
         self.cargo_add("defmt-rtt", None, true)?;
@@ -272,21 +294,33 @@ impl Init {
                         panic_handler = panic_handler
                     )
                 }
+                (Family::RP2040, _) => {
+                    format!(
+                        include_str!("templates/main.rs.rp.template"),
+                        panic_handler = panic_handler
+                    )
+                }
             },
         )
     }
 
-    fn init_memory_x(&self, memory: MemRegion) -> Result<(), Error> {
-        self.create_file(
-            "memory.x",
-            &format!(
-                include_str!("templates/memory.x.template"),
-                flash_origin = memory.flash_origin,
-                flash_len = memory.flash_length,
-                ram_origin = memory.ram_origin,
-                ram_len = memory.ram_length,
+    fn init_memory_x(&self, family: &Family) -> Result<(), Error> {
+        match family {
+            Family::NRF(mem) => self.create_file(
+                "memory.x",
+                &format!(
+                    include_str!("templates/memory.x.nrf.template"),
+                    flash_origin = mem.flash_origin,
+                    flash_len = mem.flash_length,
+                    ram_origin = mem.ram_origin,
+                    ram_len = mem.ram_length,
+                ),
             ),
-        )
+            Family::RP2040 => {
+                self.create_file("memory.x", &include_str!("templates/memory.x.rp.template"))
+            }
+            _ => Ok(()),
+        }
     }
 
     fn create_file(&self, name: &str, content: &str) -> Result<(), Error> {
