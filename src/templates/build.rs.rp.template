@@ -13,7 +13,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
-fn main() {{
+fn main() {
     // Put `memory.x` in our output directory and ensure it's
     // on the linker search path.
     let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
@@ -32,5 +32,6 @@ fn main() {{
     println!("cargo:rustc-link-arg-bins=--nmagic");
     println!("cargo:rustc-link-arg-bins=-Tlink.x");
     println!("cargo:rustc-link-arg-bins=-Tlink-rp.x");
+    #[cfg(feature = "defmt")]
     println!("cargo:rustc-link-arg-bins=-Tdefmt.x");
-}}
+}
