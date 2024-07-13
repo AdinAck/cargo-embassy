@@ -31,6 +31,11 @@ $cwd/target/release/cargo-embassy embassy init test-nrf52832 --chip nrf52832-xxa
 $cwd/target/release/cargo-embassy embassy init test-esp32c3 --chip esp32c3
 $cwd/target/release/cargo-embassy embassy init test-esp32s3 --chip esp32s3
 
+# esp toolchain
+cargo install espup
+espup install
+. $HOME/export-esp.sh
+
 # compile
 cd test-stm32g0; cargo build; cargo build --no-default-features --release
 cd ../test-stm32g4; cargo build; cargo build --no-default-features --release
