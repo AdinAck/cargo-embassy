@@ -1,7 +1,6 @@
 use crate::{
     chip::{
-        family::{mem_region::MemRegion, Family},
-        target::Target,
+        family::{esp::Variant, mem_region::MemRegion, Family},
         Chip,
     },
     cli::init_args::{panic_handler::PanicHandler, soft_device::Softdevice, InitArgs},
@@ -53,8 +52,8 @@ impl Init {
 
         self.create_project(&args.name)?;
 
-        self.init_config(&chip.target, &probe_target_name)?;
-        self.init_toolchain(&chip.target)?;
+        self.init_config(&chip, &probe_target_name)?;
+        self.init_toolchain(&chip)?;
         self.init_embed(&probe_target_name)?;
         self.init_build(&chip.family)?;
         self.init_manifest(
@@ -63,7 +62,9 @@ impl Init {
             &args.panic_handler,
             args.softdevice.as_ref(),
         )?;
-        self.init_fmt()?;
+        if !matches!(&chip.family, Family::ESP(_)) {
+            self.init_fmt()?;
+        }
         self.init_main(&chip.family, &args.panic_handler, args.softdevice.as_ref())?;
 
         if let Family::NRF(mem_reg) = chip.family {
@@ -100,26 +101,39 @@ impl Init {
         }
     }
 
-    fn init_config(&self, target: &Target, chip: &str) -> Result<(), Error> {
+    fn init_config(&self, chip: &Chip, name: &str) -> Result<(), Error> {
         fs::create_dir_all(".cargo").map_err(|_| Error::CreateFolder(".cargo".into()))?;
 
         self.create_file(
             ".cargo/config.toml",
-            &format!(
-                include_str!("templates/config.toml.template"),
-                target = target,
-                chip = chip
-            ),
+            &match &chip.family {
+                Family::ESP(variant) => format!(
+                    include_str!("templates/config.toml.esp.template"),
+                    target = chip.target,
+                    rustflags = match variant {
+                        Variant::C3 => "rustflags = [\n\"-C\", \"force-frame-pointers\",\n]",
+                        Variant::S3 => "rustflags = [\n\"-C\", \"link-arg=-nostartfiles\",\n]",
+                    }
+                ),
+                _ => format!(
+                    include_str!("templates/config.toml.template"),
+                    target = chip.target,
+                    chip = name
+                ),
+            },
         )
     }
 
-    fn init_toolchain(&self, target: &Target) -> Result<(), Error> {
+    fn init_toolchain(&self, chip: &Chip) -> Result<(), Error> {
         self.create_file(
             "rust-toolchain.toml",
-            &format!(
-                include_str!("templates/rust-toolchain.toml.template"),
-                target = target
-            ),
+            &match chip.family {
+                Family::ESP(_) => include_str!("templates/rust-toolchain.toml.esp.template").into(),
+                _ => format!(
+                    include_str!("templates/rust-toolchain.toml.template"),
+                    target = chip.target
+                ),
+            },
         )
     }
 
@@ -132,8 +146,9 @@ impl Init {
 
     fn init_build(&self, family: &Family) -> Result<(), Error> {
         let template = match family {
-            Family::STM32 => include_str!("templates/build.rs.stm32.template"),
+            Family::STM => include_str!("templates/build.rs.stm.template"),
             Family::NRF(_) => include_str!("templates/build.rs.nrf.template"),
+            Family::ESP(_) => include_str!("templates/build.rs.esp.template"),
         };
 
         self.create_file("build.rs", template)
@@ -154,31 +169,59 @@ impl Init {
         // NOTE: should be threaded proably
         self.cargo_add(
             "embassy-executor",
-            Some(&["arch-cortex-m", "executor-thread", "integrated-timers"]),
+            match &chip.family {
+                Family::ESP(_) => Some(&["executor-thread"]),
+                _ => Some(&["arch-cortex-m", "executor-thread", "integrated-timers"]),
+            },
             false,
         )?;
         self.cargo_add("embassy-sync", None, false)?;
         self.cargo_add("embassy-futures", None, false)?;
-        self.cargo_add("embassy-time", Some(&["tick-hz-32_768"]), false)?;
+        self.cargo_add(
+            "embassy-time",
+            match &chip.family {
+                Family::ESP(_) => Some(&["generic-queue-8"]),
+                _ => Some(&["tick-hz-32_768"]),
+            },
+            false,
+        )?;
 
-        match chip.family {
-            Family::STM32 => self.cargo_add(
-                "embassy-stm32",
-                Some(&[
-                    "memory-x",
-                    chip.name.as_str(),
-                    "time-driver-any",
-                    "exti",
-                    "unstable-pac",
-                ]),
-                false,
-            ),
-            Family::NRF(_) => self.cargo_add(
-                "embassy-nrf",
-                Some(&[chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
-                false,
-            ),
-        }?;
+        match &chip.family {
+            Family::STM => {
+                self.cargo_add(
+                    "embassy-stm32",
+                    Some(&[
+                        "memory-x",
+                        chip.name.as_str(),
+                        "time-driver-any",
+                        "exti",
+                        "unstable-pac",
+                    ]),
+                    false,
+                )?;
+            }
+            Family::NRF(_) => {
+                self.cargo_add(
+                    "embassy-nrf",
+                    Some(&[chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
+                    false,
+                )?;
+            }
+            Family::ESP(variant) => {
+                let name = variant.to_string();
+
+                self.cargo_add("embassy-time-driver", None, false)?;
+                self.cargo_add(
+                    "esp-backtrace",
+                    Some(&[&name, "exception-handler", "panic-handler", "println"]),
+                    false,
+                )?;
+                self.cargo_add("esp-hal", Some(&[&name]), false)?;
+                self.cargo_add("esp-hal-embassy", Some(&[&name, "time-timg0"]), false)?;
+                self.cargo_add("esp-println", Some(&[&name, "log"]), false)?;
+                self.cargo_add("log", None, false)?;
+            }
+        };
 
         if let Some(softdevice) = softdevice {
             self.cargo_add(
@@ -195,48 +238,57 @@ impl Init {
             self.cargo_add(&format!("nrf-softdevice-{}", softdevice.str()), None, false)?;
         }
 
-        self.cargo_add(
-            "cortex-m",
-            Some(if softdevice.is_some() {
-                &["inline-asm"]
-            } else {
-                &["inline-asm", "critical-section-single-core"]
-            }),
-            false,
-        )?;
-        self.cargo_add("cortex-m-rt", None, false)?;
-        self.cargo_add("defmt", None, true)?;
-        self.cargo_add("defmt-rtt", None, true)?;
-        self.cargo_add("panic-probe", Some(&["print-defmt"]), true)?;
-        self.cargo_add(panic_handler.str(), None, false)?;
-
-        let mut file = fs::OpenOptions::new()
-            .read(true)
-            .append(true)
-            .open("Cargo.toml")
-            .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
-
-        // really gross patch for cargo version discontinuity
-        // somewhere between cargo 1.72 and 1.76 the behavior of "cargo add" changed
-        let mut buf = String::new();
-        file.read_to_string(&mut buf).unwrap();
-        if !buf.contains("[features]") {
-            file.write_all(include_str!("templates/Cargo.toml.feature-patch.template").as_bytes())
-                .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
-        }
-
-        file.write_all(
-            if softdevice.is_some() {
-                include_str!("templates/Cargo.toml.sd.append").into()
-            } else {
-                format!(
-                    include_str!("templates/Cargo.toml.append"),
-                    family = chip.family
-                )
+        if let Family::ESP(_) = &chip.family {
+            println!("[NOTICE] ESP32s have their own panic handler system.");
+            if panic_handler.ne(&PanicHandler::default()) {
+                Err(Error::ErroneousPanicHandler)?
             }
-            .as_bytes(),
-        )
-        .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+        } else {
+            self.cargo_add(
+                "cortex-m",
+                Some(if softdevice.is_some() {
+                    &["inline-asm"]
+                } else {
+                    &["inline-asm", "critical-section-single-core"]
+                }),
+                false,
+            )?;
+            self.cargo_add("cortex-m-rt", None, false)?;
+            self.cargo_add("defmt", None, true)?;
+            self.cargo_add("defmt-rtt", None, true)?;
+            self.cargo_add("panic-probe", Some(&["print-defmt"]), true)?;
+            self.cargo_add(panic_handler.str(), None, false)?;
+
+            let mut file = fs::OpenOptions::new()
+                .read(true)
+                .append(true)
+                .open("Cargo.toml")
+                .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+
+            // really gross patch for cargo version discontinuity
+            // somewhere between cargo 1.72 and 1.76 the behavior of "cargo add" changed
+            let mut buf = String::new();
+            file.read_to_string(&mut buf).unwrap();
+            if !buf.contains("[features]") {
+                file.write_all(
+                    include_str!("templates/Cargo.toml.feature-patch.template").as_bytes(),
+                )
+                .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+            }
+
+            file.write_all(
+                if softdevice.is_some() {
+                    include_str!("templates/Cargo.toml.sd.append").into()
+                } else {
+                    format!(
+                        include_str!("templates/Cargo.toml.append"),
+                        family = chip.family
+                    )
+                }
+                .as_bytes(),
+            )
+            .map_err(|_| Error::CreateFile("Cargo.toml".into()))?;
+        }
 
         Ok(())
     }
@@ -256,8 +308,8 @@ impl Init {
         self.create_file(
             "src/main.rs",
             &match (family, softdevice) {
-                (Family::STM32, _) => format!(
-                    include_str!("templates/main.rs.stm32.template"),
+                (Family::STM, _) => format!(
+                    include_str!("templates/main.rs.stm.template"),
                     panic_handler = panic_handler
                 ),
                 (Family::NRF(_), Some(_)) => {
@@ -272,6 +324,7 @@ impl Init {
                         panic_handler = panic_handler
                     )
                 }
+                (Family::ESP(_), _) => include_str!("templates/main.rs.esp.template").into(),
             },
         )
     }

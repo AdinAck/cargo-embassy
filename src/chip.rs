@@ -1,6 +1,8 @@
 pub mod family;
 pub mod target;
 
+use family::esp::Variant;
+
 use crate::error::{Error, InvalidChip};
 use std::str::FromStr;
 
@@ -29,25 +31,28 @@ impl FromStr for Chip {
             ("nrf52840", (NRF(MemRegion::NRF52840), Thumbv7f)),
             // TODO: nrf53x and nrf91x
             // STM
-            ("stm32c0", (STM32, Thumbv6)),
-            ("stm32f0", (STM32, Thumbv6)),
-            ("stm32f1", (STM32, Thumbv7)),
-            ("stm32f2", (STM32, Thumbv7)),
-            ("stm32f3", (STM32, Thumbv7e)),
-            ("stm32f4", (STM32, Thumbv7e)),
-            ("stm32f7", (STM32, Thumbv7e)),
-            ("stm32g0", (STM32, Thumbv6)),
-            ("stm32g4", (STM32, Thumbv7e)),
-            ("stm32h5", (STM32, Thumbv8)),
-            ("stm32h7", (STM32, Thumbv7e)),
-            ("stm32l0", (STM32, Thumbv6)),
-            ("stm32l1", (STM32, Thumbv7)),
-            ("stm32l4", (STM32, Thumbv7e)),
-            ("stm32l5", (STM32, Thumbv8)),
-            ("stm32u5", (STM32, Thumbv8)),
-            ("stm32wb", (STM32, Thumbv7e)),
-            ("stm32wba", (STM32, Thumbv8)),
-            ("stm32wl", (STM32, Thumbv7e)),
+            ("stm32c0", (STM, Thumbv6)),
+            ("stm32f0", (STM, Thumbv6)),
+            ("stm32f1", (STM, Thumbv7)),
+            ("stm32f2", (STM, Thumbv7)),
+            ("stm32f3", (STM, Thumbv7e)),
+            ("stm32f4", (STM, Thumbv7e)),
+            ("stm32f7", (STM, Thumbv7e)),
+            ("stm32g0", (STM, Thumbv6)),
+            ("stm32g4", (STM, Thumbv7e)),
+            ("stm32h5", (STM, Thumbv8)),
+            ("stm32h7", (STM, Thumbv7e)),
+            ("stm32l0", (STM, Thumbv6)),
+            ("stm32l1", (STM, Thumbv7)),
+            ("stm32l4", (STM, Thumbv7e)),
+            ("stm32l5", (STM, Thumbv8)),
+            ("stm32u5", (STM, Thumbv8)),
+            ("stm32wb", (STM, Thumbv7e)),
+            ("stm32wba", (STM, Thumbv8)),
+            ("stm32wl", (STM, Thumbv7e)),
+            // ESP32
+            ("esp32c3", (ESP(Variant::C3), Risc32Imc)),
+            ("esp32s3", (ESP(Variant::S3), XTensaS3)),
         ];
 
         let (family, target) = chips
@@ -59,10 +64,11 @@ impl FromStr for Chip {
             })?;
 
         Ok(Self {
-            name: match family {
-                STM32 => chip.to_string(),
+            name: match &family {
+                STM => chip.to_string(),
                 // FRAGILE: "_" is used to coerce probe-rs chip search
                 NRF(_) => chip.split('_').next().unwrap().to_string(),
+                ESP(variant) => variant.to_string(),
             },
             family,
             target,
