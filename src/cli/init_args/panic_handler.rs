@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 
-#[derive(Debug, Clone, Default, ValueEnum)]
+#[derive(Debug, Clone, Default, PartialEq, ValueEnum)]
 #[value()]
 pub enum PanicHandler {
     #[default]
