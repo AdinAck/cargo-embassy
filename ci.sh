@@ -32,8 +32,13 @@ $cwd/target/release/cargo-embassy embassy init test-esp32c3 --chip esp32c3
 $cwd/target/release/cargo-embassy embassy init test-esp32s3 --chip esp32s3
 
 # esp toolchain
-cargo install espup
-espup install
+if [ "${1-""}" = "--install-esp" ]; then
+    cargo install espup
+    espup install
+else
+    echo "Skipping ESP toolchain installation."
+fi
+
 . $HOME/export-esp.sh
 
 # compile

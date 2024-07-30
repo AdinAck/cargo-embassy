@@ -54,7 +54,9 @@ impl Init {
 
         self.init_config(&chip, &probe_target_name)?;
         self.init_toolchain(&chip)?;
-        self.init_embed(&probe_target_name)?;
+        if !matches!(&chip.family, Family::ESP(_)) {
+            self.init_embed(&probe_target_name)?;
+        }
         self.init_build(&chip.family)?;
         self.init_manifest(
             &args.name,
@@ -180,7 +182,7 @@ impl Init {
         self.cargo_add(
             "embassy-time",
             match &chip.family {
-                Family::ESP(_) => Some(&["generic-queue-8"]),
+                Family::ESP(_) => None,
                 _ => Some(&["tick-hz-32_768"]),
             },
             false,
@@ -217,9 +219,14 @@ impl Init {
                     false,
                 )?;
                 self.cargo_add("esp-hal", Some(&[&name]), false)?;
-                self.cargo_add("esp-hal-embassy", Some(&[&name, "time-timg0"]), false)?;
+                self.cargo_add(
+                    "esp-hal-embassy",
+                    Some(&[&name, "integrated-timers"]),
+                    false,
+                )?;
                 self.cargo_add("esp-println", Some(&[&name, "log"]), false)?;
                 self.cargo_add("log", None, false)?;
+                self.cargo_add("static_cell", None, false)?;
             }
         };
 

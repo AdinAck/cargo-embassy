@@ -10,9 +10,10 @@ use esp_hal::{
     peripherals::Peripherals,
     prelude::*,
     system::SystemControl,
-    timer::timg::TimerGroup,
+    timer::{timg::TimerGroup, ErasedTimer, OneShotTimer},
 };
 use esp_println::println;
+use static_cell::StaticCell;
 
 #[main]
 async fn main(_spawner: Spawner) {
@@ -23,11 +24,18 @@ async fn main(_spawner: Spawner) {
 
     esp_println::logger::init_logger_from_env();
 
-    let timg0 = TimerGroup::new_async(peripherals.TIMG0, &clocks);
-    esp_hal_embassy::init(&clocks, timg0);
+    let timg0 = TimerGroup::new(peripherals.TIMG0, &clocks, None);
+
+    let timer = {
+        static TIMER: StaticCell<[OneShotTimer<ErasedTimer>; 1]> = StaticCell::new();
+
+        TIMER.init([OneShotTimer::new(timg0.timer0.into())])
+    };
+
+    esp_hal_embassy::init(&clocks, timer);
     let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
 
-    let mut led = Output::new(io.pins.gpio21, Level::Low);
+    let mut led = Output::new(io.pins.gpio17, Level::Low);
 
     loop {
         println!("Hello, World!");
