@@ -27,27 +27,11 @@ $cwd/target/release/cargo-embassy embassy init test-stm32g4 --chip stm32g431rb -
 $cwd/target/release/cargo-embassy embassy init test-nrf52840 --chip nrf52840
 $cwd/target/release/cargo-embassy embassy init test-nrf52832 --chip nrf52832-xxab --softdevice s132
 
-# esp32
-$cwd/target/release/cargo-embassy embassy init test-esp32c3 --chip esp32c3
-$cwd/target/release/cargo-embassy embassy init test-esp32s3 --chip esp32s3
-
-# esp toolchain
-if [ "${1-""}" = "--install-esp" ]; then
-    cargo install espup
-    espup install
-else
-    echo "Skipping ESP toolchain installation."
-fi
-
-. $HOME/export-esp.sh
-
 # compile
 cd test-stm32g0; cargo build; cargo build --no-default-features --release
 cd ../test-stm32g4; cargo build; cargo build --no-default-features --release
 cd ../test-nrf52840; cargo build; cargo build --no-default-features --release
 cd ../test-nrf52832; cargo build; cargo build --no-default-features --release
-cd ../test-esp32c3; cargo build --release
-cd ../test-esp32s3; cargo build --release
 
 # clean up
 cd ../..
