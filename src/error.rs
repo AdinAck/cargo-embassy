@@ -6,6 +6,7 @@ pub enum Error {
     CreateFile(String),
     CreateFolder(String),
     ErroneousSoftdevice,
+    ErroneousPanicHandler,
     InvalidChip(InvalidChip),
 }
 

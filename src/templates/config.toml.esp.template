@@ -1,0 +1,16 @@
+# This file was automatically generated.
+
+[target.{target}]
+runner = "espflash flash --monitor"
+
+
+[env]
+ESP_LOGLEVEL="INFO"
+
+[build]
+{rustflags}
+
+target = "{target}"
+
+[unstable]
+build-std = ["core"]

@@ -2,5 +2,5 @@
 
 [toolchain]
 channel = "1.80"
-components = [ "rust-src", "rustfmt" ]
+components = ["rust-src", "rustfmt"]
 targets = ["{target}"]
