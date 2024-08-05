@@ -17,6 +17,8 @@ use std::{
     time::Duration,
 };
 
+use serde_json::Value;
+
 pub struct Init {
     pb: ProgressBar,
 }
@@ -53,6 +55,9 @@ impl Init {
         self.create_project(&args.name)?;
 
         self.init_config(&chip, &probe_target_name)?;
+        if args.vscode {
+            self.init_debug_config(&chip, &probe_target_name, &args.name)?;
+        }
         self.init_toolchain(&chip)?;
         if !matches!(&chip.family, Family::ESP(_)) {
             self.init_embed(&probe_target_name)?;
@@ -101,6 +106,26 @@ impl Init {
         } else {
             Err(Error::InvalidChip(InvalidChip::Unknown))
         }
+    }
+
+    fn init_debug_config(&self, chip: &Chip, name: &str, project_name: &str) -> Result<(), Error> {
+        fs::create_dir_all(".vscode").map_err(|_| Error::CreateFolder(".vscode".into()))?;
+
+        let contents = include_str!("templates/launch.json.template").to_string();
+        let mut contents =
+            serde_json::from_str::<Value>(&contents).expect("failed to convert to json");
+
+        // update chip name
+        contents["configurations"][0]["chip"] = Value::String(name.to_string());
+
+        // update target binary name
+        let target = format!("target/{}/debug/{}", chip.target, project_name);
+        contents["configurations"][0]["coreConfigs"][0]["programBinary"] = Value::String(target);
+
+        self.create_file(
+            ".vscode/launch.json",
+            serde_json::to_string_pretty(&contents).unwrap().as_str(),
+        )
     }
 
     fn init_config(&self, chip: &Chip, name: &str) -> Result<(), Error> {

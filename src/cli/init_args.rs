@@ -18,4 +18,11 @@ pub struct InitArgs {
 
     #[arg(long, help = "Configure for use with a Softdevice (NRF only).")]
     pub softdevice: Option<Softdevice>,
+
+    #[arg(
+        long,
+        help = "Generate config files for vscode.",
+        default_value_t = false
+    )]
+    pub vscode: bool,
 }

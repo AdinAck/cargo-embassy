@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "probe-rs-debug",
+      "request": "launch",
+      "name": "probe_rs",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "probe-rs",
+      "runtimeArgs": ["dap-server"],
+      "chip": "chip_name",
+      "flashingConfig": {
+        "flashingEnabled": true,
+        "haltAfterReset": false,
+        "formatOptions": {
+        }
+      },
+      "coreConfigs": [
+        {
+          "coreIndex": 0,
+          "rttEnabled": true,
+          "rttChannelFormats": [
+            {
+              "channelNumber": 0,
+              "dataFormat": "String",
+              "showTimestamps": true
+            },
+            {
+              "channelNumber": 1,
+              "dataFormat": "BinaryLE"
+            }
+          ],
+          "programBinary": "path_to_your_binary",
+          "svdFile": "" 
+        }
+      ],
+      "env": {
+        "RUST_LOG": "info"
+      },
+      "consoleLogLevel": "Console"
+    }
+  ]
+}
+
