@@ -118,7 +118,7 @@ macro_rules! debug {
         {
             #[cfg(feature = "defmt")]
             ::defmt::debug!($s $(, $x)*);
-            #[cfg(not(eature="defmt"))]
+            #[cfg(not(feature="defmt"))]
             let _ = ($( & $x ),*);
         }
     };
