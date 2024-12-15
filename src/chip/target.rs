@@ -7,6 +7,7 @@ pub enum Target {
     Thumbv7e,
     Thumbv7f,
     Thumbv8,
+    XTensaS2,
     XTensaS3,
     Risc32Imc,
 }
@@ -19,6 +20,7 @@ impl Display for Target {
             Self::Thumbv7e => "thumbv7em-none-eabi",
             Self::Thumbv7f => "thumbv7em-none-eabihf",
             Self::Thumbv8 => "thumbv8m.main-none-eabihf",
+            Self::XTensaS2 => "xtensa-esp32s2-none-elf",
             Self::XTensaS3 => "xtensa-esp32s3-none-elf",
             Self::Risc32Imc => "riscv32imc-unknown-none-elf",
         })

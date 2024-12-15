@@ -19,6 +19,7 @@ cd $test_dir
 
 # generation
 $cwd/target/release/cargo-embassy embassy init test-esp32c3 --chip esp32c3
+$cwd/target/release/cargo-embassy embassy init test-esp32s2 --chip esp32s2
 $cwd/target/release/cargo-embassy embassy init test-esp32s3 --chip esp32s3
 
 # esp toolchain
@@ -33,6 +34,7 @@ fi
 
 # compile
 cd $test_dir/test-esp32c3; cargo build --release
+cd $test_dir/test-esp32s2; cargo build --release
 cd $test_dir/test-esp32s3; cargo build --release
 
 # clean up
