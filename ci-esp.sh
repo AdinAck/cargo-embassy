@@ -32,9 +32,9 @@ fi
 . $HOME/export-esp.sh
 
 # compile
-cd ../test-esp32c3; cargo build --release
-cd ../test-esp32s3; cargo build --release
+cd $test_dir/test-esp32c3; cargo build --release
+cd $test_dir/test-esp32s3; cargo build --release
 
 # clean up
-cd ../..
-# rm -r ci
+cd $cwd
+# rm -r $test_dir/ci
