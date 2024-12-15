@@ -52,6 +52,7 @@ impl FromStr for Chip {
             ("stm32wl", (STM, Thumbv7e)),
             // ESP32
             ("esp32c3", (ESP(Variant::C3), Risc32Imc)),
+            ("esp32s2", (ESP(Variant::S2), XTensaS2)),
             ("esp32s3", (ESP(Variant::S3), XTensaS3)),
         ];
 

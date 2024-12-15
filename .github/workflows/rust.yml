@@ -10,12 +10,21 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
       - name: Install Deps
         run: sudo apt -y install libudev-dev
-      - name: ci
+      - name: CI
         run: ./ci.sh
+  ci-esp:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Deps
+        run: sudo apt -y install libudev-dev
+      - name: CI
+        run: ./ci-esp.sh

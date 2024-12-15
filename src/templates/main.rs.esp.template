@@ -5,38 +5,26 @@ use embassy_executor::Spawner;
 use embassy_time::Timer;
 use esp_backtrace as _;
 use esp_hal::{
-    clock::ClockControl,
-    gpio::{Io, Level, Output},
-    peripherals::Peripherals,
-    prelude::*,
-    system::SystemControl,
-    timer::{timg::TimerGroup, ErasedTimer, OneShotTimer},
+    self,
+    clock::CpuClock,
+    gpio::{Level, Output},
+    timer::timg::TimerGroup,
 };
+use esp_hal_embassy::main;
 use esp_println::println;
-use static_cell::StaticCell;
 
 #[main]
 async fn main(_spawner: Spawner) {
-    let peripherals = Peripherals::take();
-    let system = SystemControl::new(peripherals.SYSTEM);
-
-    let clocks = ClockControl::max(system.clock_control).freeze();
-
     esp_println::logger::init_logger_from_env();
 
-    let timg0 = TimerGroup::new(peripherals.TIMG0, &clocks, None);
+    let mut config = esp_hal::Config::default();
+    config.cpu_clock = CpuClock::max();
+    let peripherals = esp_hal::init(config);
 
-    let timer = {
-        static TIMER: StaticCell<[OneShotTimer<ErasedTimer>; 1]> = StaticCell::new();
+    let timg0 = TimerGroup::new(peripherals.TIMG0);
+    esp_hal_embassy::init(timg0.timer0);
 
-        TIMER.init([OneShotTimer::new(timg0.timer0.into())])
-    };
-
-    esp_hal_embassy::init(&clocks, timer);
-    let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
-
-    let mut led = Output::new(io.pins.gpio17, Level::Low);
-
+    let mut led = Output::new(peripherals.GPIO17, Level::High);
     loop {
         println!("Hello, World!");
         led.toggle();
