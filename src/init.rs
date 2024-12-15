@@ -139,8 +139,8 @@ impl Init {
                     target = chip.target,
                     rustflags = match variant {
                         Variant::C3 => "rustflags = [\n\"-C\", \"force-frame-pointers\",\n]",
-                        Variant::S2 => "rustflags = [\n\"-C\", \"link-arg=-nostartfiles\",\n]",
-                        Variant::S3 => "rustflags = [\n\"-C\", \"link-arg=-nostartfiles\",\n]",
+                        Variant::S2 | Variant::S3 =>
+                            "rustflags = [\n\"-C\", \"link-arg=-nostartfiles\",\n]",
                     }
                 ),
                 _ => format!(
