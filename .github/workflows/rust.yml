@@ -24,5 +24,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Install Deps
+        run: sudo apt -y install libudev-dev
       - name: CI
         run: ./ci-esp.sh
