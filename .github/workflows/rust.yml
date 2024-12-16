@@ -27,4 +27,4 @@ jobs:
       - name: Install Deps
         run: sudo apt -y install libudev-dev
       - name: CI
-        run: ./ci-esp.sh
+        run: ./ci-esp.sh --install-esp
