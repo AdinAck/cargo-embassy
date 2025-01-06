@@ -216,17 +216,17 @@ impl Init {
             "embassy-executor",
             match &chip.family {
                 Family::ESP(_) => Some(&["executor-thread"]),
-                _ => Some(&["arch-cortex-m", "executor-thread", "integrated-timers"]),
+                _ => Some(&["arch-cortex-m", "executor-thread"]),
             },
             false,
         )?;
         self.cargo_add("embassy-sync", None, false)?;
         self.cargo_add("embassy-futures", None, false)?;
         self.cargo_add(
-            "embassy-time",
+            "embassy-time@0.3.2",
             match &chip.family {
                 Family::ESP(_) => None,
-                _ => Some(&["tick-hz-32_768"]),
+                _ => Some(&["tick-hz-32_768", "generic-queue-8"]),
             },
             false,
         )?;
