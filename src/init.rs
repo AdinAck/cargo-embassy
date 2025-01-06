@@ -142,6 +142,12 @@ impl Init {
         self.create_file(
             ".vscode/launch.json",
             serde_json::to_string_pretty(&contents).unwrap().as_str(),
+        )?;
+
+        // create task.json 
+        self.create_file(
+            ".vscode/tasks.json",
+            include_str!("templates/tasks.json.template"),
         )
     }
 
