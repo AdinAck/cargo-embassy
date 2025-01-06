@@ -13,6 +13,7 @@ use std::{
     env::set_current_dir,
     fs,
     io::{Read, Write},
+    path::Path,
     process::Command,
     time::Duration,
 };
@@ -52,11 +53,19 @@ impl Init {
             return Err(Error::ErroneousSoftdevice);
         }
 
-        self.create_project(&args.name)?;
+        // distinction of name and path
+        let path = Path::new(&args.name);
+        let project_name = path
+            .file_name()
+            .ok_or(Error::CreateCargo)?
+            .to_string_lossy()
+            .to_string();
+
+        self.create_project(path, &project_name)?;
 
         self.init_config(&chip, &probe_target_name)?;
         if args.vscode {
-            self.init_debug_config(&chip, &probe_target_name, &args.name)?;
+            self.init_debug_config(&chip, &probe_target_name, &project_name)?;
         }
         self.init_toolchain(&chip)?;
         if !matches!(&chip.family, Family::ESP(_)) {
@@ -64,7 +73,7 @@ impl Init {
         }
         self.init_build(&chip.family)?;
         self.init_manifest(
-            &args.name,
+            &project_name,
             &chip,
             &args.panic_handler,
             args.softdevice.as_ref(),
@@ -82,14 +91,22 @@ impl Init {
         Ok(())
     }
 
-    fn create_project(&self, name: &str) -> Result<(), Error> {
+    fn create_project(&self, path: &Path, project_name: &str) -> Result<(), Error> {
         self.pb.set_message("Create cargo project");
+
+        if let Some(parent) = path.parent() {
+            let parent = parent.to_string_lossy().to_string();
+            if parent != "" {
+                set_current_dir(parent).map_err(|_| Error::ChangeDir)?;
+            }
         Command::new("cargo")
-            .args(["new", &name])
+                .args(["new", &project_name])
             .output()
             .map_err(|_| Error::CreateCargo)?;
-
-        set_current_dir(name).map_err(|_| Error::ChangeDir)
+            set_current_dir(project_name).map_err(|_| Error::ChangeDir)
+        } else {
+            Err(Error::CreateCargo)
+        }
     }
 
     fn get_target_info(&self, name: &str) -> Result<(Chip, String), Error> {
