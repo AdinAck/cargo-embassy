@@ -8,6 +8,7 @@
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "probe-rs",
       "runtimeArgs": ["dap-server"],
+      "preLaunchTask": "${defaultBuildTask}",
       "chip": "chip_name",
       "flashingConfig": {
         "flashingEnabled": true,
