@@ -199,7 +199,7 @@ impl Init {
             "embassy-executor",
             match &chip.family {
                 Family::ESP(_) => Some(&["executor-thread"]),
-                _ => Some(&["arch-cortex-m", "executor-thread", "integrated-timers"]),
+                _ => Some(&["arch-cortex-m", "executor-thread"]),
             },
             false,
         )?;
