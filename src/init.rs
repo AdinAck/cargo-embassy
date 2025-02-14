@@ -201,16 +201,18 @@ impl Init {
                 Family::ESP(_) => Some(&["executor-thread"]),
                 _ => Some(&["arch-cortex-m", "executor-thread"]),
             },
+            None,
             false,
         )?;
-        self.cargo_add("embassy-sync", None, false)?;
-        self.cargo_add("embassy-futures", None, false)?;
+        self.cargo_add("embassy-sync", None, None, false)?;
+        self.cargo_add("embassy-futures", None, None, false)?;
         self.cargo_add(
             "embassy-time",
             match &chip.family {
                 Family::ESP(_) => None,
                 _ => Some(&["tick-hz-32_768"]),
             },
+            None,
             false,
         )?;
 
@@ -225,6 +227,7 @@ impl Init {
                         "exti",
                         "unstable-pac",
                     ]),
+                    None,
                     false,
                 )?;
             }
@@ -232,27 +235,30 @@ impl Init {
                 self.cargo_add(
                     "embassy-nrf",
                     Some(&[chip.name.as_str(), "gpiote", "time-driver-rtc1"]),
+                    None,
                     false,
                 )?;
             }
             Family::ESP(variant) => {
                 let name = variant.to_string();
 
-                self.cargo_add("embassy-time-driver", None, false)?;
+                self.cargo_add("embassy-time-driver", None, None, false)?;
                 self.cargo_add(
                     "esp-backtrace",
                     Some(&[&name, "exception-handler", "panic-handler", "println"]),
+                    None,
                     false,
                 )?;
-                self.cargo_add("esp-hal", Some(&[&name]), false)?;
+                self.cargo_add("esp-hal", Some(&[&name]), None, false)?;
                 self.cargo_add(
                     "esp-hal-embassy",
                     Some(&[&name, "integrated-timers"]),
+                    None,
                     false,
                 )?;
-                self.cargo_add("esp-println", Some(&[&name, "log"]), false)?;
-                self.cargo_add("log", None, false)?;
-                self.cargo_add("static_cell", None, false)?;
+                self.cargo_add("esp-println", Some(&[&name, "log"]), None, false)?;
+                self.cargo_add("log", None, None, false)?;
+                self.cargo_add("static_cell", None, None, false)?;
             }
         };
 
@@ -266,9 +272,15 @@ impl Init {
                     "ble-gatt-server",
                     "critical-section-impl",
                 ]),
+                Some("https://github.com/embassy-rs/nrf-softdevice"),
                 false,
             )?;
-            self.cargo_add(&format!("nrf-softdevice-{}", softdevice.str()), None, false)?;
+            self.cargo_add(
+                &format!("nrf-softdevice-{}", softdevice.str()),
+                None,
+                Some("https://github.com/embassy-rs/nrf-softdevice"),
+                false,
+            )?;
         }
 
         if let Family::ESP(_) = &chip.family {
@@ -284,13 +296,14 @@ impl Init {
                 } else {
                     &["inline-asm", "critical-section-single-core"]
                 }),
+                None,
                 false,
             )?;
-            self.cargo_add("cortex-m-rt", None, false)?;
-            self.cargo_add("defmt", None, true)?;
-            self.cargo_add("defmt-rtt", None, true)?;
-            self.cargo_add("panic-probe", Some(&["print-defmt"]), true)?;
-            self.cargo_add(panic_handler.str(), None, false)?;
+            self.cargo_add("cortex-m-rt", None, None, false)?;
+            self.cargo_add("defmt", None, None, true)?;
+            self.cargo_add("defmt-rtt", None, None, true)?;
+            self.cargo_add("panic-probe", Some(&["print-defmt"]), None, true)?;
+            self.cargo_add(panic_handler.str(), None, None, false)?;
 
             let mut file = fs::OpenOptions::new()
                 .read(true)
@@ -395,6 +408,7 @@ impl Init {
         &self,
         name: &str,
         features: Option<&[&str]>,
+        git: Option<&str>,
         optional: bool,
     ) -> Result<(), Error> {
         self.pb.set_message(format!("Cargo add: {name}"));
@@ -404,6 +418,10 @@ impl Init {
 
         cmd.arg("add")
             .args([name, &format!("--features={features}")]);
+
+        if let Some(git) = git {
+            cmd.arg("--git").arg(git);
+        }
 
         if optional {
             cmd.arg("--optional");
