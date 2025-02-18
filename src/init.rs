@@ -250,12 +250,7 @@ impl Init {
                     false,
                 )?;
                 self.cargo_add("esp-hal", Some(&[&name]), None, false)?;
-                self.cargo_add(
-                    "esp-hal-embassy",
-                    Some(&[&name, "integrated-timers"]),
-                    None,
-                    false,
-                )?;
+                self.cargo_add("esp-hal-embassy", Some(&[&name]), None, false)?;
                 self.cargo_add("esp-println", Some(&[&name, "log"]), None, false)?;
                 self.cargo_add("log", None, None, false)?;
                 self.cargo_add("static_cell", None, None, false)?;
