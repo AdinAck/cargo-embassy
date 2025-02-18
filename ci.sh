@@ -34,5 +34,4 @@ cd ../test-nrf52840; cargo build; cargo build --no-default-features --release
 cd ../test-nrf52832; cargo build; cargo build --no-default-features --release
 
 # clean up
-cd ../..
-# rm -r ci
+cd $cwd

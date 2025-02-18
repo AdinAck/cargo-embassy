@@ -39,4 +39,3 @@ cd $test_dir/test-esp32s3; cargo build --release
 
 # clean up
 cd $cwd
-# rm -r $test_dir/ci
