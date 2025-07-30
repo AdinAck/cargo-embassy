@@ -39,7 +39,7 @@ impl FromStr for Chip {
             ("stm32f4", (STM, Thumbv7e)),
             ("stm32f7", (STM, Thumbv7e)),
             ("stm32g0", (STM, Thumbv6)),
-            ("stm32g4", (STM, Thumbv7e)),
+            ("stm32g4", (STM, Thumbv7f)),
             ("stm32h5", (STM, Thumbv8)),
             ("stm32h7", (STM, Thumbv7e)),
             ("stm32l0", (STM, Thumbv6)),
