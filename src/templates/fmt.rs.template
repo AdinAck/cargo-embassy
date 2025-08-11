@@ -216,7 +216,7 @@ impl<T, E> Try for Result<T, E> {
 pub(crate) struct Bytes<'a>(pub &'a [u8]);
 
 #[cfg(feature = "defmt")]
-impl<'a> defmt::Format for Bytes<'a> {
+impl defmt::Format for Bytes<'_> {
     fn format(&self, fmt: defmt::Formatter) {
         defmt::write!(fmt, "{:02x}", self.0)
     }
